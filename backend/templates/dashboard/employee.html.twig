@@ -1,0 +1,104 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard | Employee Service Desk{% endblock %}
+
+{% block body %}
+<div class="main-header">
+    <div class="header-title">
+        <h1>Dashboard</h1>
+        <p>Welcome back, {{ app.user.firstName }}. Here is a summary of your service desk activity.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ path('app_ticket_create') }}" class="btn btn-primary">➕ Create Ticket</a>
+    </div>
+</div>
+
+<!-- Metrics Overview -->
+<div class="grid-3" style="margin-bottom: 40px;">
+    <div class="card glass-panel metric-card">
+        <span class="metric-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-right:4px;"><path d="M3 3h18v18H3V3z"/></svg> Open / Assigned Tickets</span>
+        <span class="metric-value">{{ open_tickets|length }}</span>
+    </div>
+    <div class="card glass-panel metric-card">
+        <span class="metric-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-right:4px;"><path d="M12 2l9 21H3L12 2z"/></svg> In-Progress Tickets</span>
+        <span class="metric-value" style="background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            {{ inprogress_tickets|length }}
+        </span>
+    </div>
+    <div class="card glass-panel metric-card">
+        <span class="metric-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-right:4px;"><path d="M5 13l4 4L19 7"/></svg> Resolved / Closed</span>
+        <span class="metric-value" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            {{ resolved_tickets|length }}
+        </span>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- Active Tickets list -->
+    <div class="card glass-panel" style="margin-bottom: 0;">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">My Active Tickets</h3>
+        
+        {% if open_tickets|length == 0 and inprogress_tickets|length == 0 %}
+            <p style="color: var(--text-secondary); font-size: 14px;">You have no active tickets at the moment.</p>
+        {% else %}
+            <div class="table-container">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Number</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in open_tickets|merge(inprogress_tickets) %}
+                            <tr>
+                                <td>
+                                    <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" style="font-weight: 600;">
+                                        {{ ticket.ticketNumber }}
+                                    </a>
+                                </td>
+                                <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ ticket.title }}
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ ticket.status|lower|replace({' ': ''}) }}">
+                                        {{ ticket.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ ticket.priority|lower }}">
+                                        {{ ticket.priority }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Notifications -->
+    <div class="card glass-panel" style="margin-bottom: 0;">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">Recent Notifications</h3>
+        
+        {% if notifications|length == 0 %}
+            <p style="color: var(--text-secondary); font-size: 14px;">No new notifications.</p>
+        {% else %}
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                {% for notif in notifications %}
+                    <div style="display: flex; flex-direction: column; gap: 4px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="font-size: 14px;">{{ notif.title }}</strong>
+                            <span style="font-size: 11px; color: var(--text-muted);">{{ notif.createdAt|date('H:i, d M Y') }}</span>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-secondary);">{{ notif.content }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+<div class="error-state-card" style="text-align: center; padding: 48px 24px; background: #fef2f2; border-radius: 12px; border: 1px solid #fecaca; margin: 20px 0;">
+    <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 24px; color: #dc2626;">⚠️</span>
+    </div>
+    <h3 style="font-size: 18px; font-weight: 700; color: #991b1b; margin-bottom: 6px;">{{ title|default('Something went wrong') }}</h3>
+    <p style="font-size: 14px; color: #7f1d1d; max-width: 380px; margin: 0 auto 20px; line-height: 1.5;">{{ message|default('We could not load this information. Please try again.') }}</p>
+    {% if retry_url is defined and retry_url %}
+        <a href="{{ retry_url }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
+            🔄 Try Again
+        </a>
+    {% endif %}
+</div>

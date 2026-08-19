@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="{{ app.user ? app.user.language : 'en' }}" data-theme="{{ app.user ? app.user.theme : 'light' }}" dir="{{ app.user and app.user.language == 'ar' ? 'rtl' : 'ltr' }}">
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}App{% endblock %}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>SD</text></svg>">
+        {% if app.user %}
+        <meta name="csrf-token" content="{{ csrf_token('notification') }}">
+        {% endif %}
+        {% block stylesheets %}
+            <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+            <style>
+                /* Critical layout rules to guarantee exactly 1 sidebar/menu on the left */
+                @media (min-width: 769px) {
+                    .mobile-header,
+                    .mobile-nav-drawer,
+                    .mobile-drawer-backdrop {
+                        display: none !important;
+                    }
+                    #desktopSidebar {
+                        display: flex !important;
+                    }
+                }
+                @media (max-width: 768px) {
+                    #desktopSidebar {
+                        display: none !important;
+                    }
+                    .mobile-header {
+                        display: flex !important;
+                    }
+                }
+                .mobile-nav-drawer {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 280px;
+                    max-width: 85vw;
+                    height: 100vh;
+                    background: var(--bg-secondary);
+                    border-right: 1px solid var(--border-color);
+                    box-shadow: var(--shadow-lg);
+                    z-index: 10000;
+                    display: none;
+                    flex-direction: column;
+                    transform: translateX(-100%);
+                    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    visibility: hidden;
+                }
+                /* ── Full Dark Theme Implementation ── */
+                html[data-theme="dark"], body[data-theme="dark"], [data-theme="dark"] {
+                    --bg-primary: #0f172a;
+                    --bg-secondary: #1e293b;
+                    --border-color: #334155;
+                    --border-strong: #475569;
+                    --text-primary: #f8fafc;
+                    --text-secondary: #94a3b8;
+                    --text-muted: #64748b;
+                    --primary-light: #1e3a8a;
+                    background-color: #0f172a !important;
+                    color: #f8fafc !important;
+                }
+
+                html[data-theme="dark"] body {
+                    background-color: #0f172a !important;
+                    color: #f8fafc !important;
+                }
+
+                html[data-theme="dark"] .glass-panel,
+                html[data-theme="dark"] .card {
+                    background: #1e293b !important;
+                    border-color: #334155 !important;
+                    color: #f8fafc !important;
+                }
+
+                html[data-theme="dark"] .sidebar {
+                    background: #1e293b !important;
+                    border-color: #334155 !important;
+                }
+
+                html[data-theme="dark"] .mobile-header,
+                html[data-theme="dark"] .mobile-nav-drawer {
+                    background: #1e293b !important;
+                    border-color: #334155 !important;
+                }
+
+                html[data-theme="dark"] .form-input,
+                html[data-theme="dark"] select.form-input,
+                html[data-theme="dark"] textarea.form-input {
+                    background: #0f172a !important;
+                    border-color: #334155 !important;
+                    color: #f8fafc !important;
+                }
+
+                html[data-theme="dark"] .table-container,
+                html[data-theme="dark"] .custom-table {
+                    background: #1e293b !important;
+                    border-color: #334155 !important;
+                }
+
+                html[data-theme="dark"] .custom-table th {
+                    background: #0f172a !important;
+                    border-color: #334155 !important;
+                    color: #94a3b8 !important;
+                }
+
+                html[data-theme="dark"] .custom-table td {
+                    border-color: #334155 !important;
+                    color: #f8fafc !important;
+                }
+
+                html[data-theme="dark"] .custom-table tr:hover td {
+                    background: #334155 !important;
+                }
+
+                html[data-theme="dark"] .btn-secondary {
+                    background: #334155 !important;
+                    border-color: #475569 !important;
+                    color: #f8fafc !important;
+                }
+
+                html[data-theme="dark"] .sidebar-menu-item a {
+                    color: #94a3b8 !important;
+                }
+
+                html[data-theme="dark"] .sidebar-menu-item a:hover {
+                    background: #334155 !important;
+                    color: #ffffff !important;
+                }
+
+                html[data-theme="dark"] .sidebar-menu-item.active a {
+                    background: #2563eb !important;
+                    color: #ffffff !important;
+                }
+
+                html[data-theme="dark"] .header-title h1,
+                html[data-theme="dark"] .metric-title,
+                html[data-theme="dark"] .metric-value,
+                html[data-theme="dark"] h1, 
+                html[data-theme="dark"] h2, 
+                html[data-theme="dark"] h3, 
+                html[data-theme="dark"] h4, 
+                html[data-theme="dark"] h5, 
+                html[data-theme="dark"] h6 {
+                    color: #f8fafc !important;
+                }
+
+                html[data-theme="dark"] #notifPanel {
+                    background: #1e293b !important;
+                    border-color: #334155 !important;
+                }
+
+                html[data-theme="dark"] .notif-item {
+                    border-color: #334155 !important;
+                }
+
+                html[data-theme="dark"] .notif-item:hover {
+                    background: #0f172a !important;
+                }
+            </style>
+        {% endblock %}
+
+        {% block javascripts %}
+            {% block importmap %}{{ importmap('app') }}{% endblock %}
+        {% endblock %}
+    </head>
+    <body>
+        {% if app.user %}
+            <div class="app-container">
+                <!-- Sidebar -->
+                <aside id="desktopSidebar" class="sidebar glass-panel">
+                    <div class="sidebar-logo" style="display:flex;align-items:center;padding:0 20px;gap:10px;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span class="sidebar-logo-text">Service Desk</span>
+                    </div>
+                    
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') == 'app_dashboard' %}active{% endif %}">
+                            <a href="{{ path('app_dashboard') }}" title="Dashboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                <span class="menu-label">Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') starts with 'app_ticket' %}active{% endif %}">
+                            <a href="{{ path('app_ticket_index') }}" title="Tickets">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M15 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9l-4-4z"/><polyline points="15 5 15 9 19 9"/></svg>
+                                <span class="menu-label">Tickets</span>
+                            </a>
+                        </li>
+                        
+                        {% if is_granted('ROLE_HR') or is_granted('ROLE_ADMIN') %}
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') starts with 'app_report' %}active{% endif %}">
+                            <a href="{{ path('app_report_index') }}" title="Reports">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                                <span class="menu-label">Reports</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') starts with 'app_setting' %}active{% endif %}">
+                            <a href="{{ path('app_setting_index') }}" title="Settings">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                <span class="menu-label">Settings</span>
+                            </a>
+                        </li>
+
+                        {% if is_granted('ROLE_ADMIN') %}
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') starts with 'app_user' %}active{% endif %}">
+                            <a href="{{ path('app_user_index') }}" title="Users">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                <span class="menu-label">Users</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {# ── Notification Bell ── #}
+                        <li class="sidebar-menu-item" style="position:relative;">
+                            <a href="#" id="notifBellBtn" onclick="toggleNotifPanel(event)" style="display:flex;align-items:center;gap:10px;position:relative;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                                Notifications
+                                <span id="notifBadge" style="display:none;margin-left:auto;min-width:18px;height:18px;padding:0 5px;background:#ef4444;color:#fff;border-radius:9999px;font-size:11px;font-weight:700;line-height:18px;text-align:center;">0</span>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="sidebar-footer">
+
+                        
+                        <!-- User Section -->
+                        <a href="{{ path('app_profile') }}" style="text-decoration: none; color: inherit;">
+                            <div class="sidebar-user">
+                                <img src="{{ app.user.profilePicture ?? '/assets/images/default-avatar.png' }}" 
+                                     onerror="this.src='https://www.gravatar.com/avatar/{{ app.user.emailHash }}?d=mp&s=100'" 
+                                     class="user-avatar" alt="Avatar">
+                                <div class="user-info">
+                                    <span class="user-name">{{ app.user.fullName }}</span>
+                                    <span class="user-role">{{ app.user.roleEntity.displayName }}</span>
+                                </div>
+                            </div>
+                        </a>
+                        
+                        <a href="#" onclick="showLogoutModal(); return false;" class="btn btn-secondary" style="width: 100%; text-align: center; justify-content: center; background: #fee2e2; color: #991b1b; border: none;">
+                            Logout
+                        </a>
+                    </div>
+                </aside>
+
+                <!-- Mobile Header -->
+                <div class="mobile-header">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <button id="mobileMenuBtn" onclick="openMobileDrawer()" aria-label="Open Navigation Drawer" aria-expanded="false" aria-controls="mobileNavDrawer" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: none; border: none; cursor: pointer; color: var(--text-primary); border-radius: 8px;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                        </button>
+                        <div class="mobile-logo" style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; font-family: var(--font-heading); color: var(--text-primary);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            Service Desk
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <a href="#" onclick="toggleNotifPanel(event)" aria-label="Notifications" style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-secondary);text-decoration:none;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                            <span id="notifBadgeMobile" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;background:#ef4444;border-radius:50%;"></span>
+                        </a>
+                    </div>
+                </div>
+
+                {# ── Mobile Slide-in Drawer ── #}
+                <div id="mobileNavDrawer" class="mobile-nav-drawer" style="display: none;" aria-label="Mobile Navigation" role="dialog" aria-modal="true">
+                    <div style="display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 16px; border-bottom: 1px solid var(--border-color);">
+                        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; font-family: var(--font-heading); color: var(--text-primary);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            Service Desk
+                        </div>
+                        <button id="closeMobileDrawerBtn" onclick="closeMobileDrawer()" aria-label="Close Navigation Drawer" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: none; border: none; cursor: pointer; color: var(--text-secondary); border-radius: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    <ul class="sidebar-menu" style="overflow-y: auto; flex-grow: 1; padding: 16px 12px;">
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') == 'app_dashboard' %}active{% endif %}">
+                            <a href="{{ path('app_dashboard') }}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') starts with 'app_ticket' %}active{% endif %}">
+                            <a href="{{ path('app_ticket_index') }}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M15 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9l-4-4z"/><polyline points="15 5 15 9 19 9"/></svg>
+                                Tickets
+                            </a>
+                        </li>
+                        {% if is_granted('ROLE_HR') or is_granted('ROLE_ADMIN') %}
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') starts with 'app_report' %}active{% endif %}">
+                            <a href="{{ path('app_report_index') }}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                                Reports
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') starts with 'app_setting' %}active{% endif %}">
+                            <a href="{{ path('app_setting_index') }}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                Settings
+                            </a>
+                        </li>
+                        {% if is_granted('ROLE_ADMIN') %}
+                        <li class="sidebar-menu-item {% if app.request.attributes.get('_route') starts with 'app_user' %}active{% endif %}">
+                            <a href="{{ path('app_user_index') }}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                Users
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+
+                    <div class="sidebar-footer" style="padding: 16px 20px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px;">
+                        <a href="{{ path('app_profile') }}" style="text-decoration: none; color: inherit;">
+                            <div class="sidebar-user">
+                                <img src="{{ app.user.profilePicture ?? '/assets/images/default-avatar.png' }}" 
+                                     onerror="this.src='https://www.gravatar.com/avatar/{{ app.user.emailHash }}?d=mp&s=100'" 
+                                     class="user-avatar" alt="Avatar">
+                                <div class="user-info">
+                                    <span class="user-name">{{ app.user.fullName }}</span>
+                                    <span class="user-role">{{ app.user.roleEntity.displayName }}</span>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="#" onclick="closeMobileDrawer(); showLogoutModal(); return false;" class="btn btn-secondary" style="width: 100%; text-align: center; justify-content: center; background: #fee2e2; color: #991b1b; border: none;">
+                            Logout
+                        </a>
+                    </div>
+                </div>
+                <div id="mobileNavDrawerBackdrop" class="mobile-drawer-backdrop" onclick="closeMobileDrawer()"></div>
+
+                {# ── Notification Panel ── #}
+                <div id="notifPanel" style="display:none;position:fixed;top:0;right:0;width:360px;max-width:100vw;height:100vh;background:var(--bg-secondary);border-left:1px solid var(--border-color);box-shadow:var(--shadow-lg);z-index:9998;display:none;flex-direction:column;overflow:hidden;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 16px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                            <span style="font-size:16px;font-weight:700;color:var(--text-primary);">Notifications</span>
+                            <span id="notifCountLabel" style="display:none;font-size:12px;font-weight:600;padding:2px 8px;background:var(--primary-light);color:var(--primary-color);border-radius:9999px;">0 unread</span>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <button id="markAllReadBtn" onclick="markAllNotifRead()" style="font-size:12px;font-weight:600;color:var(--primary-color);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;" title="Mark all as read">Mark all read</button>
+                            <button onclick="closeNotifPanel()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;" title="Close">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="notifList" style="flex:1;overflow-y:auto;padding:8px 0;"></div>
+                </div>
+                {# ── Backdrop ── #}
+                <div id="notifBackdrop" onclick="closeNotifPanel()" style="display:none;position:fixed;inset:0;z-index:9997;background:rgba(15,23,42,0.25);"></div>
+
+                <!-- Main Content Area -->
+                <main class="main-content">
+                    <!-- Flash Messages -->
+                    {% for label, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="glass-panel" style="padding: 16px; margin-bottom: 24px; border-left: 4px solid {% if label == 'success' %}#10b981{% else %}#ef4444{% endif %}; font-weight: 500;">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    {% block body %}{% endblock %}
+                </main>
+            </div>
+        {% else %}
+            <!-- Unauthenticated Layout -->
+            <main>
+                {% block main_login %}{% endblock %}
+            </main>
+        {% endif %}
+        {% if app.user %}
+            <!-- Logout Confirmation Modal -->
+            <div id="logoutModal" style="display: none; position: fixed; inset: 0; z-index: 9999; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px);">
+                <div class="glass-panel" style="width: 100%; max-width: 400px; padding: 32px; text-align: center; animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                    <div style="display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--status-open-bg);margin:0 auto 16px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--status-open-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+                    <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">Leaving so soon?</h3>
+                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px; line-height: 1.5;">
+                        Are you sure you want to securely log out of your session? You will need to re-enter your credentials to access your workspace again.
+                    </p>
+                    <div style="display: flex; gap: 16px;">
+                        <button onclick="hideLogoutModal()" class="btn btn-secondary" style="flex: 1; justify-content: center;">Cancel</button>
+                        <a href="{{ path('app_logout') }}" class="btn btn-primary" style="flex: 1; justify-content: center; background: #ef4444; border-color: #ef4444; color: white;">Yes, Logout</a>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                @keyframes modalPop {
+                    0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+                    100% { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                #notifPanel {
+                    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.2s;
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                #notifPanel.open {
+                    transform: translateX(0);
+                    opacity: 1;
+                    display: flex !important;
+                }
+                .notif-item {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    padding: 14px 20px;
+                    cursor: pointer;
+                    border-bottom: 1px solid var(--border-color);
+                    transition: background 0.15s;
+                    text-decoration: none;
+                    color: inherit;
+                }
+                .notif-item:hover { background: var(--bg-primary); }
+                .notif-item.unread { background: color-mix(in srgb, var(--primary-color) 5%, var(--bg-secondary)); }
+                .notif-item.unread:hover { background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary)); }
+                .notif-item-title {
+                    font-size: 13.5px;
+                    font-weight: 600;
+                    color: var(--text-primary);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .notif-item-title .unread-dot {
+                    width: 7px;
+                    height: 7px;
+                    border-radius: 50%;
+                    background: var(--primary-color);
+                    flex-shrink: 0;
+                }
+                .notif-item-content {
+                    font-size: 12.5px;
+                    color: var(--text-secondary);
+                    line-height: 1.45;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .notif-item-time {
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    margin-top: 2px;
+                }
+                .notif-empty {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 48px 24px;
+                    gap: 12px;
+                    color: var(--text-muted);
+                    text-align: center;
+                }
+                .notif-empty svg { opacity: 0.35; }
+                .notif-empty p { font-size: 14px; font-weight: 500; margin: 0; }
+                .notif-empty span { font-size: 12px; }
+            </style>
+            
+            <script>
+                function showLogoutModal() {
+                    const modal = document.getElementById('logoutModal');
+                    modal.style.display = 'flex';
+                }
+                function hideLogoutModal() {
+                    const modal = document.getElementById('logoutModal');
+                    modal.style.display = 'none';
+                }
+                document.getElementById('logoutModal').addEventListener('click', function(e) {
+                    if (e.target === this) hideLogoutModal();
+                });
+
+                // ── Mobile Drawer Controls ─────────────────────────────
+                let isMobileDrawerOpen = false;
+
+                function openMobileDrawer() {
+                    isMobileDrawerOpen = true;
+                    const drawer = document.getElementById('mobileNavDrawer');
+                    const backdrop = document.getElementById('mobileNavDrawerBackdrop');
+                    const btn = document.getElementById('mobileMenuBtn');
+
+                    if (drawer) {
+                        drawer.style.display = 'flex';
+                        setTimeout(() => drawer.classList.add('open'), 10);
+                    }
+                    if (backdrop) backdrop.classList.add('open');
+                    if (btn) btn.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+
+                function closeMobileDrawer() {
+                    isMobileDrawerOpen = false;
+                    const drawer = document.getElementById('mobileNavDrawer');
+                    const backdrop = document.getElementById('mobileNavDrawerBackdrop');
+                    const btn = document.getElementById('mobileMenuBtn');
+
+                    if (drawer) {
+                        drawer.classList.remove('open');
+                        setTimeout(() => { if (!isMobileDrawerOpen) drawer.style.display = 'none'; }, 250);
+                    }
+                    if (backdrop) backdrop.classList.remove('open');
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                }
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        if (isMobileDrawerOpen) closeMobileDrawer();
+                        if (notifPanelOpen) closeNotifPanel();
+                    }
+                });
+
+                // ── Notification Panel ──────────────────────────────────
+                let notifPanelOpen = false;
+
+                function toggleNotifPanel(e) {
+                    e.preventDefault();
+                    notifPanelOpen ? closeNotifPanel() : openNotifPanel();
+                }
+
+                function openNotifPanel() {
+                    notifPanelOpen = true;
+                    const panel = document.getElementById('notifPanel');
+                    const backdrop = document.getElementById('notifBackdrop');
+                    panel.style.display = 'flex';
+                    backdrop.style.display = 'block';
+                    setTimeout(() => panel.classList.add('open'), 10);
+                    loadNotifications();
+                }
+
+                function closeNotifPanel() {
+                    notifPanelOpen = false;
+                    const panel = document.getElementById('notifPanel');
+                    const backdrop = document.getElementById('notifBackdrop');
+                    panel.classList.remove('open');
+                    backdrop.style.display = 'none';
+                    setTimeout(() => { panel.style.display = 'none'; }, 250);
+                }
+
+                function loadNotifications() {
+                    fetch('/notifications', { headers: { 'Accept': 'application/json' } })
+                        .then(r => r.json())
+                        .then(data => {
+                            renderNotifications(data.notifications || []);
+                            updateBadge(data.unreadCount || 0);
+                        })
+                        .catch(() => {});
+                }
+
+                function renderNotifications(notifications) {
+                    const list = document.getElementById('notifList');
+                    if (!notifications.length) {
+                        list.innerHTML = `
+                            <div class="notif-empty">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                                <p>No notifications yet</p>
+                                <span>You're all caught up.</span>
+                            </div>`;
+                        return;
+                    }
+                    list.innerHTML = notifications.map(n => `
+                        <a href="/notifications/${n.id}/read" class="notif-item ${n.isRead ? '' : 'unread'}">
+                            <div class="notif-item-title">
+                                ${!n.isRead ? '<span class="unread-dot"></span>' : ''}
+                                ${escHtml(n.title)}
+                            </div>
+                            <div class="notif-item-content">${escHtml(n.content)}</div>
+                            <div class="notif-item-time">${escHtml(n.createdAt)}</div>
+                        </a>`).join('');
+                }
+
+                function updateBadge(count) {
+                    const badge = document.getElementById('notifBadge');
+                    const badgeMobile = document.getElementById('notifBadgeMobile');
+                    const label = document.getElementById('notifCountLabel');
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.style.display = 'inline-block';
+                        if (badgeMobile) badgeMobile.style.display = 'block';
+                        if (label) { label.textContent = count + ' unread'; label.style.display = 'inline-block'; }
+                    } else {
+                        badge.style.display = 'none';
+                        if (badgeMobile) badgeMobile.style.display = 'none';
+                        if (label) label.style.display = 'none';
+                    }
+                }
+
+                function markAllNotifRead() {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                    fetch('/notifications/read-all', {
+                        method: 'POST',
+                        headers: { 'X-CSRF-Token': csrfToken }
+                    }).then(() => loadNotifications()).catch(() => {});
+                }
+
+                function escHtml(str) {
+                    if (!str) return '';
+                    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                }
+
+                // Initial load + poll every 30 seconds
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Load badge count on page load
+                    fetch('/notifications', { headers: { 'Accept': 'application/json' } })
+                        .then(r => r.json())
+                        .then(data => updateBadge(data.unreadCount || 0))
+                        .catch(() => {});
+
+                    // Refresh badge every 30 seconds
+                    setInterval(function() {
+                        fetch('/notifications', { headers: { 'Accept': 'application/json' } })
+                            .then(r => r.json())
+                            .then(data => {
+                                updateBadge(data.unreadCount || 0);
+                                if (notifPanelOpen) renderNotifications(data.notifications || []);
+                            })
+                            .catch(() => {});
+                    }, 30000);
+                });
+            </script>
+        {% endif %}
+        <!-- Global Toast Container -->
+        <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+        <!-- Accessible Confirm Modal -->
+        <div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" style="display: none;">
+            <div class="modal-content">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                    <div id="confirmModalIconBg" style="width: 40px; height: 40px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; font-size: 20px;">⚠️</div>
+                    <h3 id="confirmModalTitle" style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0;">Confirm Action</h3>
+                </div>
+                <p id="confirmModalMessage" style="font-size: 14px; color: #64748b; line-height: 1.5; margin-bottom: 24px;">Are you sure you want to proceed?</p>
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <button type="button" id="confirmModalCancelBtn" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="confirmModalConfirmBtn" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attachment Lightbox Modal -->
+        <div id="lightboxModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Attachment Lightbox" style="display: none;">
+            <div class="lightbox-content">
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px;">
+                    <span id="lightboxTitle" style="color: #ffffff; font-weight: 600; font-size: 15px;">Attachment</span>
+                    <div style="display: flex; gap: 12px;">
+                        <a id="lightboxDownloadBtn" href="#" download class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; color: #ffffff; background: rgba(255,255,255,0.2); border: none;">⬇️ Download</a>
+                        <button type="button" onclick="closeLightbox()" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; color: #ffffff; background: rgba(255,255,255,0.2); border: none;">✕ Close</button>
+                    </div>
+                </div>
+                <img id="lightboxImage" src="" alt="Attachment Preview" />
+            </div>
+        </div>
+
+        <script>
+            // ── Toast Manager System ──────────────────────────────────
+            window.showToast = function(message, type = 'info', duration = 3500) {
+                const container = document.getElementById('toastContainer');
+                if (!container) return;
+
+                const toast = document.createElement('div');
+                toast.className = `toast-item toast-${type}`;
+                
+                let icon = 'ℹ️';
+                if (type === 'success') icon = '✅';
+                if (type === 'error') icon = '❌';
+                if (type === 'warning') icon = '⚠️';
+
+                toast.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>${icon}</span>
+                        <span>${message}</span>
+                    </div>
+                    <button class="toast-close-btn" onclick="this.parentElement.remove()" aria-label="Close Toast">✕</button>
+                `;
+
+                container.appendChild(toast);
+                setTimeout(() => toast.classList.add('show'), 10);
+
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 250);
+                }, duration);
+            };
+
+            // Convert Symfony Flash Messages to Toasts Automatically
+            document.addEventListener('DOMContentLoaded', function() {
+                const flashElements = document.querySelectorAll('.alert-flash');
+                flashElements.forEach(el => {
+                    const type = el.dataset.type || 'info';
+                    const message = el.textContent.trim();
+                    if (message) {
+                        window.showToast(message, type);
+                        el.remove();
+                    }
+                });
+
+                // Global Double Submit & Loading Button Protection
+                document.querySelectorAll('form').forEach(form => {
+                    form.addEventListener('submit', function(e) {
+                        const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+                        if (submitBtn && !submitBtn.disabled) {
+                            submitBtn.disabled = true;
+                            submitBtn.style.opacity = '0.7';
+                            const origText = submitBtn.innerHTML || submitBtn.value;
+                            submitBtn.innerHTML = '⏳ Processing...';
+                        }
+                    });
+                });
+            });
+
+            // ── Accessible Confirm Dialog System ─────────────────────
+            let confirmResolve = null;
+            window.showConfirmDialog = function(title, message, isDestructive = false) {
+                return new Promise((resolve) => {
+                    confirmResolve = resolve;
+                    const modal = document.getElementById('confirmModal');
+                    const titleEl = document.getElementById('confirmModalTitle');
+                    const msgEl = document.getElementById('confirmModalMessage');
+                    const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+                    const iconBg = document.getElementById('confirmModalIconBg');
+
+                    if (titleEl) titleEl.textContent = title;
+                    if (msgEl) msgEl.textContent = message;
+                    
+                    if (confirmBtn) {
+                        confirmBtn.style.background = isDestructive ? '#dc2626' : '#2563eb';
+                        confirmBtn.textContent = isDestructive ? 'Delete' : 'Confirm';
+                    }
+
+                    if (iconBg) {
+                        iconBg.style.background = isDestructive ? '#fee2e2' : '#eff6ff';
+                        iconBg.innerHTML = isDestructive ? '🗑️' : '⚠️';
+                    }
+
+                    if (modal) {
+                        modal.style.display = 'flex';
+                        setTimeout(() => modal.classList.add('open'), 10);
+                    }
+                });
+            };
+
+            function closeConfirmModal(result) {
+                const modal = document.getElementById('confirmModal');
+                if (modal) {
+                    modal.classList.remove('open');
+                    setTimeout(() => { modal.style.display = 'none'; }, 200);
+                }
+                if (confirmResolve) {
+                    confirmResolve(result);
+                    confirmResolve = null;
+                }
+            }
+
+            document.getElementById('confirmModalCancelBtn')?.addEventListener('click', function() {
+                closeConfirmModal(false);
+            });
+
+            document.getElementById('confirmModalConfirmBtn')?.addEventListener('click', function() {
+                closeConfirmModal(true);
+            });
+
+            // ── Lightbox System ──────────────────────────────────────
+            window.openLightbox = function(imageUrl, title = 'Attachment') {
+                const modal = document.getElementById('lightboxModal');
+                const img = document.getElementById('lightboxImage');
+                const titleEl = document.getElementById('lightboxTitle');
+                const downloadBtn = document.getElementById('lightboxDownloadBtn');
+
+                if (img) img.src = imageUrl;
+                if (titleEl) titleEl.textContent = title;
+                if (downloadBtn) downloadBtn.href = imageUrl;
+                if (modal) {
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('open'), 10);
+                }
+            };
+
+            window.closeLightbox = function() {
+                const modal = document.getElementById('lightboxModal');
+                if (modal) {
+                    modal.classList.remove('open');
+                    setTimeout(() => { modal.style.display = 'none'; }, 200);
+                }
+            };
+
+            // Desktop Collapsible Sidebar
+            window.toggleDesktopSidebar = function() {
+                const sidebar = document.getElementById('desktopSidebar');
+                if (!sidebar) return;
+                sidebar.classList.toggle('collapsed');
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('sidebarState', isCollapsed ? 'collapsed' : 'expanded');
+            };
+
+            // Restore Desktop Sidebar State
+            if (localStorage.getItem('sidebarState') === 'collapsed') {
+                document.getElementById('desktopSidebar')?.classList.add('collapsed');
+            }
+
+            // ── Real-Time SSE Stream & Event Deduplication System ──
+            (function() {
+                const processedEvents = new Set();
+                let lastEventId = null;
+
+                function initRealtimeStream() {
+                    const connIndicator = document.getElementById('realtimeStatusPill');
+                    if (!window.EventSource) return;
+
+                    const url = '/api/notifications/stream' + (lastEventId ? '?since=' + encodeURIComponent(lastEventId) : '');
+                    const es = new EventSource(url);
+
+                    es.onopen = function() {
+                        if (connIndicator) {
+                            connIndicator.style.background = '#dcfce7';
+                            connIndicator.style.color = '#15803d';
+                            connIndicator.innerHTML = '● Live';
+                        }
+                    };
+
+                    es.onerror = function() {
+                        if (connIndicator) {
+                            connIndicator.style.background = '#fef3c7';
+                            connIndicator.style.color = '#b45309';
+                            connIndicator.innerHTML = '○ Reconnecting...';
+                        }
+                        es.close();
+                        setTimeout(initRealtimeStream, 3000);
+                    };
+
+                    es.addEventListener('notification.created', function(e) {
+                        try {
+                            const data = JSON.parse(e.data);
+                            if (processedEvents.has(data.eventId)) return;
+                            processedEvents.add(data.eventId);
+                            lastEventId = data.eventId;
+
+                            const payload = data.payload;
+                            if (window.showToast) {
+                                window.showToast(payload.title + ': ' + payload.message, 'info');
+                            }
+
+                            // Update notification badge
+                            const badge = document.getElementById('notifBadge');
+                            if (badge) {
+                                let curr = parseInt(badge.textContent || '0') + 1;
+                                badge.textContent = curr > 99 ? '99+' : curr;
+                                badge.style.display = 'inline-block';
+                            }
+
+                            // Desktop Browser Notification
+                            if (Notification && Notification.permission === 'granted') {
+                                new Notification(payload.title, { body: payload.message });
+                            }
+                        } catch (err) {
+                            console.error('Error handling SSE notification event:', err);
+                        }
+                    });
+                }
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    initRealtimeStream();
+
+                    // Request Browser Notification Permission on user interaction
+                    const notifBtn = document.getElementById('notifBellBtn');
+                    if (notifBtn) {
+                        notifBtn.addEventListener('click', function() {
+                            if (Notification && Notification.permission === 'default') {
+                                Notification.requestPermission();
+                            }
+                        });
+                    }
+                });
+            })();
+        </script>
+    </body>
+</html>

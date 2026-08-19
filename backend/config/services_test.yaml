@@ -1,0 +1,15 @@
+services:
+  _defaults:
+    public: true
+
+  App\Service\TicketManagerService:
+    public: true
+
+  App\Service\NotificationService:
+    public: true
+
+  App\Service\AuditLogger:
+    public: true
+
+  App\Service\TicketActivityLogger:
+    public: true

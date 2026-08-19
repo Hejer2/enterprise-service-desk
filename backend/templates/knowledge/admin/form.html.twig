@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ article ? 'Edit Article' : 'New Knowledge Article' }} | Admin Portal{% endblock %}
+
+{% block body %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div style="margin-bottom: 16px;">
+        <a href="{{ path('app_admin_knowledge_articles') }}" style="color: var(--text-muted); font-size: 13px; text-decoration: none; font-weight: 600;">
+            ← Back to Articles List
+        </a>
+    </div>
+
+    <div class="card glass-panel" style="padding: 32px;">
+        <h1 style="font-size: 22px; font-weight: 800; margin-bottom: 24px;">
+            {{ article ? 'Edit Knowledge Article' : 'Create Knowledge Article' }}
+        </h1>
+
+        <form action="{{ article ? path('app_admin_knowledge_article_edit', {'id': article.id}) : path('app_admin_knowledge_article_new') }}" method="post">
+            <div style="margin-bottom: 16px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700;">Article Title *</label>
+                <input type="text" name="title" class="form-input" required maxlength="255" value="{{ article ? article.title : '' }}" placeholder="e.g. How to reset your password">
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700;">Category *</label>
+                <select name="category" class="form-input" required>
+                    <option value="">Select Category...</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if article and article.category.id == cat.id %}selected{% endif %}>
+                            {{ cat.icon }} {{ cat.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700;">Short Excerpt (Summary)</label>
+                <input type="text" name="excerpt" class="form-input" value="{{ article ? article.excerpt : '' }}" placeholder="Brief 1-2 sentence description shown in search results">
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700;">Content *</label>
+                <textarea name="content" class="form-input" required rows="12" placeholder="Write instructions, troubleshooting steps, and resolution details...">{{ article ? article.content : '' }}</textarea>
+            </div>
+
+            {% if not article %}
+                <div style="margin-bottom: 24px;">
+                    <label class="form-label" style="font-size: 12px; font-weight: 700;">Initial Status</label>
+                    <select name="status" class="form-input">
+                        <option value="DRAFT">Save as Draft</option>
+                        <option value="PUBLISHED">Publish Immediately</option>
+                    </select>
+                </div>
+            {% endif %}
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <a href="{{ path('app_admin_knowledge_articles') }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    {{ article ? 'Update Article' : 'Save Article' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,772 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ticket {{ ticket.ticketNumber }} | Employee Service Desk{% endblock %}
+
+{% block body %}
+<div class="main-header" style="margin-bottom: 24px;">
+    <div class="header-title">
+        <span style="font-size: 14px; font-weight: 700; color: var(--text-muted);">
+            TICKET DETAILS
+        </span>
+        <h1 style="margin-top: 4px;">{{ ticket.ticketNumber }}</h1>
+    </div>
+    <div class="header-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        {% if is_granted('ROLE_IT_TECH') or is_granted('ROLE_MAINTENANCE_TECH') or is_granted('ROLE_HR') or is_granted('ROLE_ADMIN') %}
+            <button type="button" onclick="runAiAction('classify')" class="btn btn-secondary" style="border-color: #8b5cf6; color: #8b5cf6;">✨ Analyze with AI</button>
+            <button type="button" onclick="runAiAction('reply')" class="btn btn-secondary" style="border-color: #10b981; color: #10b981;">✨ AI Reply</button>
+            <button type="button" onclick="runAiAction('similar')" class="btn btn-secondary" style="border-color: #f59e0b; color: #f59e0b;">✨ Similar Tickets</button>
+            <button type="button" onclick="runAiAction('resolution')" class="btn btn-secondary" style="border-color: #ec4899; color: #ec4899;">✨ AI Resolution</button>
+        {% endif %}
+        <button type="button" onclick="runAiAction('summarize')" class="btn btn-secondary" style="border-color: #3b82f6; color: #3b82f6;">✨ AI Summary</button>
+        <button type="button" onclick="runAiAction('knowledge')" class="btn btn-secondary" style="border-color: #06b6d4; color: #06b6d4;">✨ Ask KB AI</button>
+        {% if ticket.canBeEditedOrDeletedBy(app.user) %}
+            <a href="{{ path('app_ticket_edit', {'id': ticket.id}) }}" class="btn btn-secondary">Edit</a>
+        {% endif %}
+        <a href="{{ path('app_ticket_index') }}" class="btn btn-secondary">Back to List</a>
+    </div>
+</div>
+
+<div class="grid-3">
+    <!-- Chat / Timeline conversation column (takes 2 columns) -->
+    <div class="card glass-panel" style="grid-column: span 2; margin-bottom: 0; display: flex; flex-direction: column; min-height: 500px;">
+        <h2 style="font-size: 20px; font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+            {{ ticket.title }}
+        </h2>
+        
+        <!-- Ticket main description as first timeline message -->
+        {% set isSelfMain = (ticket.createdBy.id == app.user.id) %}
+        <div class="timeline-item {% if isSelfMain %}self{% endif %}" style="margin-top: 24px; padding-bottom: 24px; border-bottom: 1px dashed var(--border-color);">
+            {% if not isSelfMain %}
+                <img src="https://www.gravatar.com/avatar/{{ ticket.createdBy.emailHash }}?d=mp&s=100" class="timeline-avatar" alt="avatar">
+            {% endif %}
+            
+            <div class="timeline-content-wrapper">
+                <div class="timeline-header" style="{% if isSelfMain %}text-align: right;{% endif %}">
+                    <strong>{{ isSelfMain ? 'You (Creator)' : ticket.createdBy.fullName }}</strong>
+                    <span style="font-size: 11px; color: var(--text-muted); margin-left: 8px;">{{ ticket.createdAt|date('H:i, d M Y') }}</span>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-body">{{ ticket.description }}</div>
+                    
+                    <!-- Main Ticket attachments -->
+                    {% if ticket.attachments|length > 0 %}
+                        <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 6px;">
+                            <span style="font-size: 11px; font-weight: 700; opacity: 0.8;">ATTACHMENTS:</span>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                {% for attach in ticket.attachments %}
+                                    {% if attach.message is null %}
+                                        {% set ext = attach.fileName|split('.')|last|lower %}
+                                        {% if ext in ['jpg', 'jpeg', 'png', 'gif', 'webp'] %}
+                                            <div onclick="openLightbox('{{ attach.filePath }}', '{{ attach.fileName }}')" style="cursor: pointer; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; width: 100px; height: 75px;">
+                                                <img src="{{ attach.filePath }}" alt="{{ attach.fileName }}" style="width: 100%; height: 100%; object-fit: cover;" />
+                                            </div>
+                                        {% else %}
+                                            <a href="{{ attach.filePath }}" download class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px; border-radius: 6px; background: rgba(255,255,255,0.15); color: inherit; display: inline-flex; align-items: center; gap: 6px;">
+                                                📄 {{ attach.fileName }} ({{ (attach.fileSize / 1024)|round(1) }} KB) ⬇️
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if isSelfMain %}
+                <img src="https://www.gravatar.com/avatar/{{ ticket.createdBy.emailHash }}?d=mp&s=100" class="timeline-avatar" alt="avatar" style="margin-left: 10px;">
+            {% endif %}
+        </div>
+
+        <!-- Chat Conversation Timeline -->
+        <div class="timeline" style="flex-grow: 1;">
+            {% for msg in messages %}
+                {% set isSelf = (msg.sender.id == app.user.id) %}
+                <div class="timeline-item {% if isSelf %}self{% endif %}">
+                    {% if not isSelf %}
+                        <img src="https://www.gravatar.com/avatar/{{ msg.sender.emailHash }}?d=mp&s=100" class="timeline-avatar" alt="avatar">
+                    {% endif %}
+                    
+                    <div class="timeline-content-wrapper">
+                        {% if not isSelf %}
+                            <div class="timeline-header">
+                                <span class="timeline-sender">{{ msg.sender.fullName }}</span>
+                            </div>
+                        {% else %}
+                            <div class="timeline-header" style="text-align: right;">
+                                <span class="timeline-sender" style="color: var(--primary-color);">You</span>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="timeline-content" onclick="toggleMessageMenu({{ msg.id }})">
+                            <div id="body-{{ msg.id }}" class="timeline-body">{{ msg.message }}</div>
+                            
+                            <!-- Message Options Floating Tooltip/Popup -->
+                            {% if msg.canBeEditedOrDeletedBy(app.user) %}
+                                <div id="tooltip-{{ msg.id }}" class="message-tooltip" onclick="event.stopPropagation();">
+                                    <a href="#" onclick="event.preventDefault(); triggerEdit({{ msg.id }});" class="tooltip-action">Edit</a>
+                                    <form id="deleteMsgForm-{{ msg.id }}" action="{{ path('app_message_delete', {'id': msg.id}) }}" method="post" style="display: inline;">
+                                        <button type="button" onclick="confirmDeleteMessage(event, {{ msg.id }})" class="tooltip-action" style="color: #f87171; border: none; background: transparent; cursor: pointer;">Delete</button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Message attachments -->
+                            {% if msg.attachments|length > 0 %}
+                                <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">
+                                    {% for attach in msg.attachments %}
+                                            Attachment: {{ attach.fileName }}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Hidden Timestamp toggled on click -->
+                        <div id="time-{{ msg.id }}" class="message-time-toggle">
+                            {{ msg.createdAt|date('H:i, d M Y') }} {% if msg.isEdited %}(edited){% endif %}
+                        </div>
+
+                        <!-- Inline Edit Form (initially hidden) -->
+                        {% if msg.canBeEditedOrDeletedBy(app.user) %}
+                            <form id="edit-form-{{ msg.id }}" action="{{ path('app_message_edit', {'id': msg.id}) }}" method="post" style="display: none; margin-top: 6px; width: 280px;" onclick="event.stopPropagation();">
+                                <textarea name="message" class="form-input" style="font-size: 13px; padding: 8px; width: 100%; border-radius: 8px;" rows="2" required>{{ msg.message }}</textarea>
+                                <div style="margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end;">
+                                    <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px; border-radius: 6px;" onclick="cancelEdit({{ msg.id }})">Cancel</button>
+                                    <button type="submit" class="btn btn-primary" style="font-size: 11px; padding: 4px 8px; border-radius: 6px;">Save</button>
+                                </div>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    {% if isSelf %}
+                        <img src="https://www.gravatar.com/avatar/{{ msg.sender.emailHash }}?d=mp&s=100" class="timeline-avatar" alt="avatar" style="margin-left: 10px;">
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Reply Editor Form -->
+        {% if ticket.status != 'Closed' and ticket.status != 'Resolved' and ticket.status != 'Cancelled' %}
+            <form id="replyForm" action="{{ path('app_ticket_show', {'id': ticket.id}) }}" method="post" enctype="multipart/form-data" style="margin-top: 40px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label for="message" class="form-label" style="margin: 0; font-weight: 600;">Write a response / reply</label>
+                    {% if is_granted('ROLE_IT_TECH') or is_granted('ROLE_MAINTENANCE_TECH') or is_granted('ROLE_HR') or is_granted('ROLE_ADMIN') %}
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 12px; color: #64748b; font-weight: 500;">⚡ Canned Response:</span>
+                            <select id="cannedResponseSelect" onchange="insertCannedResponseText(this)" class="form-input" style="font-size: 12px; padding: 4px 8px; min-height: 32px; max-width: 220px;">
+                                <option value="">Select template...</option>
+                            </select>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <textarea id="message" name="message" class="form-input" rows="4" placeholder="Type your reply here..." required></textarea>
+                </div>
+
+                <!-- Drag & Drop Upload Dropzone -->
+                <div id="dropZone" style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 16px; text-align: center; background: #f8fafc; margin-bottom: 16px; transition: all 0.2s ease;">
+                    <div style="font-size: 20px; margin-bottom: 4px;">📁</div>
+                    <div style="font-size: 13px; font-weight: 600; color: #334155;">Drag & drop files here, or <label for="msg-attach" style="color: #2563eb; cursor: pointer; text-decoration: underline;">browse</label></div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Supported: PNG, JPG, PDF, DOC, TXT (Max 10MB)</div>
+                    <input type="file" name="attachments[]" id="msg-attach" multiple style="display: none;" onchange="handleValidatedFilePreview(this)">
+                </div>
+
+                <!-- Upload Progress & File Preview Grid -->
+                <div id="uploadStatusText" style="font-size: 12px; font-weight: 600; color: #2563eb; margin-bottom: 8px; display: none;"></div>
+                <div id="msgAttachPreview" class="attachment-preview-grid"></div>
+                
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 16px;">
+                    <button type="submit" class="btn btn-primary" style="min-height: 42px;">Post Reply</button>
+                </div>
+            </form>
+        {% else %}
+            <div class="glass-panel" style="margin-top: 40px; padding: 16px; text-align: center; font-weight: 600; background: rgba(0,0,0,0.05); color: var(--text-secondary);">
+                This ticket is resolved or closed. Conversation has been locked.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Ticket Sidebar Meta details -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Status & Routing card -->
+        <div class="card glass-panel" style="margin-bottom: 0;">
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                Ticket Info
+            </h3>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Status:</span>
+                    <span class="badge badge-{{ ticket.status|lower|replace({' ': ''}) }}">{{ ticket.status }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Priority:</span>
+                    <span class="badge badge-{{ ticket.priority|lower }}">{{ ticket.priority }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Category:</span>
+                    <strong>{{ ticket.category }}</strong>
+
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Created By:</span>
+                    <strong>{{ ticket.createdBy.fullName }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Assigned To:</span>
+                    <strong>{{ ticket.assignedTo.fullName ?? 'Unassigned' }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Created:</span>
+                    <strong>{{ ticket.createdAt|date('d M Y, H:i') }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLA Lifecycle Card -->
+        {% if sla is defined and sla is not null %}
+            <div class="card glass-panel" style="margin-bottom: 0;" aria-label="SLA Details">
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>SLA Tracking</span>
+                    {% set slaStatus = sla.resolutionStatus %}
+                    {% if sla.pausedAt is not null %}
+                        <span class="badge" style="background: #fef3c7; color: #b45309;" aria-label="SLA Status Paused">PAUSED</span>
+                    {% elseif slaStatus == 'COMPLETED' %}
+                        <span class="badge badge-open" aria-label="SLA Status Completed">COMPLETED</span>
+                    {% elseif slaStatus == 'BREACHED' %}
+                        <span class="badge badge-rejected" aria-label="SLA Status Breached">BREACHED</span>
+                    {% elseif slaStatus == 'AT_RISK' %}
+                        <span class="badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5;" aria-label="SLA Status At Risk">AT RISK</span>
+                    {% else %}
+                        <span class="badge badge-open" aria-label="SLA Status Active">ACTIVE</span>
+                    {% endif %}
+                </h3>
+
+                <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px;">
+                    <!-- First Response SLA -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="color: var(--text-muted); font-weight: 600;">First Response SLA:</span>
+                            <span style="font-weight: 700; color: {% if sla.firstResponseStatus == 'COMPLETED' %}#047857{% elseif sla.firstResponseStatus == 'BREACHED' %}#b91c1c{% else %}#2563eb{% endif %};">
+                                {{ sla.firstResponseStatus }}
+                            </span>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted);">
+                            Due: {{ sla.firstResponseDueAt|date('d M Y, H:i') }}
+                            {% if sla.firstResponseCompletedAt %}
+                                · Completed: {{ sla.firstResponseCompletedAt|date('H:i') }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Resolution SLA -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="color: var(--text-muted); font-weight: 600;">Resolution SLA:</span>
+                            <span style="font-weight: 700;">
+                                {{ sla.resolutionStatus }}
+                            </span>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted);">
+                            Deadline: {{ sla.resolutionDueAt|date('d M Y — H:i') }}
+                            {% if sla.resolutionCompletedAt %}
+                                · Resolved: {{ sla.resolutionCompletedAt|date('H:i') }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Activity Log & Audit Timeline Card -->
+        <div class="card glass-panel" style="margin-bottom: 0;">
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <span>Activity Timeline</span>
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">{{ activities|length }} events</span>
+            </h3>
+
+            <div class="activity-timeline-list" style="display: flex; flex-direction: column; gap: 14px; max-height: 380px; overflow-y: auto;">
+                {% if activities is empty %}
+                    <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin: 12px 0;">No activities recorded yet.</p>
+                {% else %}
+                    {% for act in activities %}
+                        <div style="display: flex; gap: 12px; font-size: 13px; align-items: flex-start;">
+                            <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--primary-color); margin-top: 5px; flex-shrink: 0;"></div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 700; color: var(--text-color);">
+                                    {{ act.description ?? act.eventType }}
+                                </div>
+                                {% if act.previousValue or act.newValue %}
+                                    <div style="font-size: 12px; color: var(--primary-color); font-weight: 600; margin-top: 2px;">
+                                        {% if act.previousValue %}{{ act.previousValue }} → {% endif %}{{ act.newValue }}
+                                    </div>
+                                {% endif %}
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                    {{ act.createdAt|date('d M Y · H:i') }} {% if act.actor %}by <strong>{{ act.actor.fullName }}</strong>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Leave Details (Conditional) -->
+        {% if ticket.leaveRequest %}
+            <div class="card glass-panel" style="margin-bottom: 0; background: rgba(79, 70, 229, 0.05); border-color: rgba(79, 70, 229, 0.2);">
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--primary-color);">
+                    Leave Specifications
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-muted);">Type:</span>
+                        <strong>{{ ticket.leaveRequest.leaveType.name }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-muted);">Start Date:</span>
+                        <strong>{{ ticket.leaveRequest.startDate|date('d M Y') }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-muted);">End Date:</span>
+                        <strong>{{ ticket.leaveRequest.endDate|date('d M Y') }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-muted);">Half-Day:</span>
+                        <strong>{{ ticket.leaveRequest.halfDay ? 'Yes' : 'No' }}</strong>
+                    </div>
+                    
+                    {% set diff = ticket.leaveRequest.startDate.diff(ticket.leaveRequest.endDate) %}
+                    {% set days = diff.days + 1 %}
+                    {% if ticket.leaveRequest.halfDay and days > 0 %}
+                        {% set days = days - 0.5 %}
+                    {% endif %}
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(79, 70, 229, 0.2);">
+                        <span style="color: var(--primary-color); font-weight: 600;">Total Duration:</span>
+                        <strong style="color: var(--primary-color);">{{ days }} Day(s)</strong>
+                    </div>
+                </div>
+
+                <!-- HR Leave decisions -->
+                {% if is_granted('ROLE_HR') or is_granted('ROLE_ADMIN') %}
+                    {% if ticket.status == 'Open' or ticket.status == 'Assigned' or ticket.status == 'In Progress' %}
+                        <div style="margin-top: 24px; display: flex; gap: 8px;">
+                            <form action="{{ path('app_ticket_status', {'id': ticket.id}) }}" method="post" style="flex: 1;">
+                                <input type="hidden" name="status" value="Approved">
+                                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; background: #10b981; border: none; font-size: 12px; padding: 8px 12px;">
+                                    Approve
+                                </button>
+                            </form>
+                            <form action="{{ path('app_ticket_status', {'id': ticket.id}) }}" method="post" style="flex: 1;">
+                                <input type="hidden" name="status" value="Rejected">
+                                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; background: #ef4444; border: none; font-size: 12px; padding: 8px 12px;">
+                                    Reject
+                                </button>
+                            </form>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Actions Panel (Technician / Admin controls) -->
+        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_IT_TECH') or is_granted('ROLE_MAINTENANCE_TECH') or is_granted('ROLE_HR') %}
+            <div class="card glass-panel" style="margin-bottom: 0;">
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Support Actions</h3>
+
+                <!-- Update Status Form -->
+                <form action="{{ path('app_ticket_status', {'id': ticket.id}) }}" method="post" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label for="action-status" class="form-label" style="font-size: 12px;">Modify Status</label>
+                        <select id="action-status" name="status" class="form-input" style="font-size: 13px; padding: 8px 12px;">
+                            <option value="Open" {% if ticket.status == 'Open' %}selected{% endif %}>Open</option>
+                            <option value="Assigned" {% if ticket.status == 'Assigned' %}selected{% endif %}>Assigned</option>
+                            <option value="In Progress" {% if ticket.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                            <option value="Waiting for Employee" {% if ticket.status == 'Waiting for Employee' %}selected{% endif %}>Waiting for Employee</option>
+                            <option value="Waiting for Technician" {% if ticket.status == 'Waiting for Technician' %}selected{% endif %}>Waiting for Technician</option>
+                            <option value="Resolved" {% if ticket.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                            <option value="Closed" {% if ticket.status == 'Closed' %}selected{% endif %}>Closed</option>
+                            <option value="Cancelled" {% if ticket.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; font-size: 13px; padding: 8px 12px;">
+                        Update Status
+                    </button>
+                </form>
+
+                <!-- Reassign/Transfer Form -->
+                {% if technicians|length > 0 %}
+                    <form action="{{ path('app_ticket_assign', {'id': ticket.id}) }}" method="post">
+                        <div class="form-group">
+                            <label for="action-assign" class="form-label" style="font-size: 12px;">Transfer Ticket</label>
+                            <select id="action-assign" name="technician" class="form-input" style="font-size: 13px; padding: 8px 12px;">
+                                <option value="">Select Technician...</option>
+                                {% for tech in technicians %}
+                                    <option value="{{ tech.id }}" {% if ticket.assignedTo == tech %}selected{% endif %}>
+                                        {{ tech.fullName }} ({{ tech.email }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; font-size: 13px; padding: 8px 12px;">
+                            Assign / Reassign
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        {% elseif ticket.createdBy.id == app.user.id and (ticket.status == 'Resolved') %}
+            <!-- Employee Resolve & Re-open Control -->
+            <div class="card glass-panel" style="margin-bottom: 0;">
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Ticket Resolution</h3>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                    This ticket is marked as resolved. Please review the solution below:
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button type="button" onclick="openCsatModal()" class="btn btn-primary" style="width: 100%; justify-content: center; background: #10b981; border: none; font-weight: 600;">
+                        ✅ Accept & Close Ticket
+                    </button>
+                    <button type="button" onclick="openReopenModal()" class="btn btn-secondary" style="width: 100%; justify-content: center; color: #dc2626; border-color: #fca5a5; font-weight: 600;">
+                        🔄 Re-open Ticket
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Re-open Modal -->
+<div id="reopenModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="reopenModalTitle">
+    <div class="modal-content">
+        <h3 id="reopenModalTitle" style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Re-open this ticket?</h3>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Tell the support team why the issue has not been resolved.</p>
+        <form action="{{ path('app_ticket_reopen', {'id': ticket.id}) }}" method="post">
+            <div class="form-group" style="margin-bottom: 16px;">
+                <textarea name="reason" class="form-input" rows="4" placeholder="Provide a detailed reason..." required></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="button" onclick="closeReopenModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="background: #dc2626; border: none;">Confirm Re-open</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- CSAT Rating Modal -->
+<div id="csatModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="csatModalTitle">
+    <div class="modal-content" style="text-align: center;">
+        <div style="font-size: 32px; margin-bottom: 8px;">🌟</div>
+        <h3 id="csatModalTitle" style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">How was your support experience?</h3>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Please rate the resolution for ticket {{ ticket.ticketNumber }}.</p>
+        
+        <form action="{{ path('app_ticket_csat', {'id': ticket.id}) }}" method="post" id="csatForm">
+            <input type="hidden" name="rating" id="csatRatingInput" value="5">
+            <div id="starContainer" style="display: flex; justify-content: center; gap: 8px; font-size: 32px; cursor: pointer; margin-bottom: 16px;">
+                <span data-value="1" onclick="setCsatStar(1)">★</span>
+                <span data-value="2" onclick="setCsatStar(2)">★</span>
+                <span data-value="3" onclick="setCsatStar(3)">★</span>
+                <span data-value="4" onclick="setCsatStar(4)">★</span>
+                <span data-value="5" onclick="setCsatStar(5)">★</span>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <textarea name="comment" class="form-input" rows="3" placeholder="Tell us more (optional feedback)..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <button type="button" onclick="skipCsatAndClose()" class="btn btn-secondary" style="border: none; background: transparent; color: #64748b;">Skip for now</button>
+                <button type="submit" class="btn btn-primary">Submit Rating</button>
+            </div>
+        </form>
+        <!-- Form for Skip action (closes ticket directly) -->
+        <form id="skipCsatForm" action="{{ path('app_ticket_status', {'id': ticket.id}) }}" method="post" style="display: none;">
+            <input type="hidden" name="status" value="Closed">
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleMessageMenu(id) {
+        // Toggle the timestamp visibility below the bubble
+        const timeEl = document.getElementById('time-' + id);
+        if (timeEl) {
+            timeEl.style.display = timeEl.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // Toggle the options tooltip above the bubble
+        const tooltipEl = document.getElementById('tooltip-' + id);
+        if (tooltipEl) {
+            // Close all other tooltips first
+            document.querySelectorAll('.message-tooltip').forEach(el => {
+                if (el.id !== 'tooltip-' + id) el.style.display = 'none';
+            });
+            tooltipEl.style.display = tooltipEl.style.display === 'flex' ? 'none' : 'flex';
+        }
+    }
+
+    function triggerEdit(id) {
+        // Hide the tooltip
+        const tooltipEl = document.getElementById('tooltip-' + id);
+        if (tooltipEl) tooltipEl.style.display = 'none';
+
+        // Hide the message text
+        const bodyEl = document.getElementById('body-' + id);
+        if (bodyEl) bodyEl.style.display = 'none';
+
+        // Show edit form
+        const formEl = document.getElementById('edit-form-' + id);
+        if (formEl) formEl.style.display = 'block';
+    }
+
+    function cancelEdit(id) {
+        // Hide edit form
+        const formEl = document.getElementById('edit-form-' + id);
+        if (formEl) formEl.style.display = 'none';
+
+        // Show message text
+        const bodyEl = document.getElementById('body-' + id);
+        if (bodyEl) bodyEl.style.display = 'block';
+    }
+
+    async function confirmDeleteTicket(e) {
+        e.preventDefault();
+        const ok = await window.showConfirmDialog('Delete Ticket?', 'Are you sure you want to delete this ticket? All messages and attachments will be permanently removed.', true);
+        if (ok) {
+            document.getElementById('deleteTicketForm').submit();
+        }
+    }
+
+    async function confirmDeleteMessage(e, id) {
+        e.preventDefault();
+        e.stopPropagation();
+        const ok = await window.showConfirmDialog('Delete Message?', 'Are you sure you want to delete this message?', true);
+        if (ok) {
+            document.getElementById('deleteMsgForm-' + id).submit();
+        }
+    }
+
+    // ── Phase 2B Modal & Interaction Scripts ────────────────
+    function openReopenModal() {
+        document.getElementById('reopenModal')?.classList.add('open');
+    }
+
+    function closeReopenModal() {
+        document.getElementById('reopenModal')?.classList.remove('open');
+    }
+
+    function openCsatModal() {
+        document.getElementById('csatModal')?.classList.add('open');
+        setCsatStar(5);
+    }
+
+    function setCsatStar(rating) {
+        document.getElementById('csatRatingInput').value = rating;
+        const stars = document.querySelectorAll('#starContainer span');
+        stars.forEach((star, idx) => {
+            star.style.color = (idx < rating) ? '#f59e0b' : '#cbd5e1';
+        });
+    }
+
+    function skipCsatAndClose() {
+        document.getElementById('csatModal')?.classList.remove('open');
+        document.getElementById('skipCsatForm')?.submit();
+    }
+
+    // Canned Response Inserter (NEVER auto-sends)
+    function insertCannedResponseText(selectEl) {
+        const selectedOption = selectEl.options[selectEl.selectedIndex];
+        const content = selectedOption.getAttribute('data-content');
+        if (content) {
+            const textarea = document.getElementById('message');
+            if (textarea) {
+                textarea.value = textarea.value ? (textarea.value + '\n\n' + content) : content;
+                textarea.focus();
+            }
+        }
+    }
+
+    // Load Canned Responses into Dropdown
+    document.addEventListener('DOMContentLoaded', function() {
+        const select = document.getElementById('cannedResponseSelect');
+        if (select) {
+            fetch('/api/canned-responses')
+                .then(r => r.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        data.forEach(item => {
+                            const opt = document.createElement('option');
+                            opt.value = item.id;
+                            opt.textContent = `${item.title}${item.category ? ' (' + item.category + ')' : ''}`;
+                            opt.setAttribute('data-content', item.content);
+                            select.appendChild(opt);
+                        });
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // Drag & Drop Handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('msg-attach');
+
+        if (dropZone && fileInput) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = '#2563eb';
+                    dropZone.style.background = '#eff6ff';
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = '#cbd5e1';
+                    dropZone.style.background = '#f8fafc';
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                fileInput.files = files;
+                handleValidatedFilePreview(fileInput);
+            }, false);
+        }
+    });
+
+    // Client-side Validation & Progress Simulation
+    function handleValidatedFilePreview(input) {
+        const previewGrid = document.getElementById('msgAttachPreview');
+        const statusText = document.getElementById('uploadStatusText');
+        if (!previewGrid) return;
+        previewGrid.innerHTML = '';
+
+        const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt', 'zip'];
+        const maxBytes = 10 * 1024 * 1024; // 10MB
+
+        if (input.files && input.files.length > 0) {
+            if (statusText) {
+                statusText.style.display = 'block';
+                statusText.textContent = '⏳ Preparing attachments for upload...';
+            }
+
+            const validFiles = [];
+            Array.from(input.files).forEach((file) => {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (file.size > maxBytes) {
+                    if (window.showToast) window.showToast(`File "${file.name}" is too large (max 10MB).`, 'error');
+                    return;
+                }
+                if (!allowedExts.includes(ext)) {
+                    if (window.showToast) window.showToast(`File type ".${ext}" is not supported.`, 'error');
+                    return;
+                }
+
+                validFiles.push(file);
+                const item = document.createElement('div');
+                item.className = 'attachment-preview-item';
+                
+                const isImg = file.type.startsWith('image/');
+                const sizeKb = (file.size / 1024).toFixed(1);
+
+                if (isImg) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        item.innerHTML = `
+                            <img src="${e.target.result}" class="attachment-preview-thumb" alt="preview" />
+                            <div style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px;">${file.name}</div>
+                            <div style="color: #10b981; font-weight: 600;">Ready (${sizeKb} KB)</div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    item.innerHTML = `
+                        <div class="attachment-preview-thumb" style="display: flex; align-items: center; justify-content: center; font-size: 24px;">📄</div>
+                        <div style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px;">${file.name}</div>
+                        <div style="color: #10b981; font-weight: 600;">Ready (${sizeKb} KB)</div>
+                    `;
+                }
+                previewGrid.appendChild(item);
+            });
+
+            if (statusText && validFiles.length > 0) {
+                statusText.textContent = `✅ ${validFiles.length} file(s) attached and validated.`;
+            }
+        }
+    }
+
+    // ── Phase 4 AI Assistant System ─────────────────────────
+    window.runAiAction = function(action) {
+        const ticketId = {{ ticket.id }};
+        const toast = window.showToast || function(m) { alert(m); };
+        toast('✨ Processing AI Assistant request...', 'info');
+
+        fetch(`/tickets/${ticketId}/ai/${action}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('AI service temporarily unavailable');
+            return res.json();
+        })
+        .then(data => {
+            if (action === 'reply' && data.draft) {
+                const textarea = document.querySelector('textarea[name="content"], textarea[name="message"]');
+                if (textarea) {
+                    textarea.value = data.draft;
+                    textarea.focus();
+                    toast('✨ AI Reply draft generated in composer. Edit and click Send to post.', 'success');
+                }
+            } else if (action === 'classify') {
+                if (window.showConfirmDialog) {
+                    window.showConfirmDialog(
+                        '✨ AI Ticket Classification Suggestion',
+                        `Suggested Category: ${data.category}\nSuggested Priority: ${data.priority}\nSuggested Team: ${data.suggestedTeam}\nReason: ${data.reason}\n\nDo you want to apply these suggestions?`
+                    ).then(confirmed => {
+                        if (confirmed) {
+                            toast('Classification suggestions applied.', 'success');
+                        }
+                    });
+                }
+            } else if (action === 'summarize') {
+                if (window.showConfirmDialog) {
+                    window.showConfirmDialog(
+                        '✨ AI Ticket Summary',
+                        `Problem: ${data.problem}\n\nCurrent Status: ${data.currentStatus}\nNext Step: ${data.nextStep}`
+                    );
+                }
+            } else if (action === 'similar') {
+                const count = data.similarTickets ? data.similarTickets.length : 0;
+                toast(`✨ Found ${count} similar resolved ticket(s).`, 'success');
+            } else if (action === 'knowledge') {
+                if (window.showConfirmDialog) {
+                    window.showConfirmDialog(
+                        '✨ Knowledge Base AI Solution',
+                        `Suggested Solution: ${data.suggestedSolution}\nConfidence: ${Math.round((data.confidence || 0.9) * 100)}%\nSources: ${(data.sources || []).map(s => s.title).join(', ') || 'Published SOPs'}`
+                    );
+                }
+            } else if (action === 'resolution') {
+                if (window.showConfirmDialog) {
+                    window.showConfirmDialog(
+                        '✨ AI Resolution Recommendation',
+                        `Recommendation: ${data.recommendation}\nSteps:\n${(data.steps || []).map((s, i) => `${i+1}. ${s}`).join('\n')}`
+                    );
+                }
+            }
+        })
+        .catch(err => {
+            toast('AI service is temporarily unavailable. Please try again later.', 'warning');
+        });
+    };
+
+    // Close all tooltips if clicked outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.timeline-content')) {
+            document.querySelectorAll('.message-tooltip').forEach(el => el.style.display = 'none');
+        }
+    });
+</script>
+{% endblock %}

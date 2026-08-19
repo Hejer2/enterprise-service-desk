@@ -1,0 +1,127 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Technician Dashboard | Employee Service Desk{% endblock %}
+
+{% block body %}
+<div class="main-header">
+    <div class="header-title">
+        <h1>Technician Dashboard</h1>
+        <p>Welcome back, {{ app.user.firstName }}. Manage your assigned technical workloads and resolution SLAs.</p>
+    </div>
+</div>
+
+<!-- Metrics Overview -->
+<div class="grid-3" style="margin-bottom: 40px;">
+    <div class="card glass-panel metric-card">
+        <span class="metric-title">🛠️ Assigned Tickets</span>
+        <span class="metric-value">{{ assigned_tickets|length }}</span>
+    </div>
+    <div class="card glass-panel metric-card">
+        <span class="metric-title" style="color: #ef4444;">🚨 SLA Warnings / Overdue</span>
+        <span class="metric-value" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            {{ sla_warnings|length }}
+        </span>
+    </div>
+    <div class="card glass-panel metric-card">
+        <span class="metric-title" style="color: #10b981;">🏆 Total Resolved (Done)</span>
+        <span class="metric-value" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            {{ total_resolved }}
+        </span>
+    </div>
+</div>
+
+
+<div class="grid-2">
+    <!-- Active Tickets list -->
+    <div class="card glass-panel" style="margin-bottom: 0;">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">My Worklist</h3>
+        
+        {% if assigned_tickets|length == 0 %}
+            <p style="color: var(--text-secondary); font-size: 14px;">Great job! You have no assigned active tickets.</p>
+        {% else %}
+            <div class="table-container">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Number</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in assigned_tickets %}
+                            <tr>
+                                <td>
+                                    <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" style="font-weight: 600;">
+                                        {{ ticket.ticketNumber }}
+                                    </a>
+                                </td>
+                                <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ ticket.title }}
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ ticket.status|lower|replace({' ': ''}) }}">
+                                        {{ ticket.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ ticket.priority|lower }}">
+                                        {{ ticket.priority }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Urgent Tickets list -->
+    <div class="card glass-panel" style="margin-bottom: 0;">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">🔥 Urgent & Critical Actions</h3>
+        
+        {% if urgent_tickets|length == 0 %}
+            <p style="color: var(--text-secondary); font-size: 14px;">No high-priority active tickets assigned to you.</p>
+        {% else %}
+            <div class="table-container">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Number</th>
+                            <th>Title</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in urgent_tickets %}
+                            <tr>
+                                <td>
+                                    <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" style="font-weight: 600;">
+                                        {{ ticket.ticketNumber }}
+                                    </a>
+                                </td>
+                                <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ ticket.title }}
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ ticket.priority|lower }}">
+                                        {{ ticket.priority }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ ticket.status|lower|replace({' ': ''}) }}">
+                                        {{ ticket.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

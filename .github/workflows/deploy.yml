@@ -1,0 +1,30 @@
+name: Continuous Deployment (CD)
+
+on:
+  workflow_run:
+    workflows: ["Docker Image Build & Push"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Production Deployment & Health Verification
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Deploy to Cloud Server via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: |
+            cd /opt/service-desk
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml exec -T php php bin/console doctrine:migrations:migrate --no-interaction
+            docker compose -f docker-compose.prod.yml up -d
+            
+            # Health check verification
+            sleep 5
+            curl -f http://localhost/health || exit 1

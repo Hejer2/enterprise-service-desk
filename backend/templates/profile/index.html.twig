@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block body %}
+<div class="main-header">
+    <div class="header-title">
+        <h1>My Profile</h1>
+        <p>View and manage your personal details and system authorization status.</p>
+    </div>
+</div>
+
+<div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+    <!-- Tab: Personal Details -->
+    <div class="card glass-panel" style="margin-bottom: 0;">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+            👤 Personal Details
+        </h3>
+        
+        <form action="{{ path('app_profile') }}" method="post" enctype="multipart/form-data">
+            
+            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 24px;">
+                <img src="{{ user.profilePicture ?? '/assets/images/default-avatar.png' }}" 
+                     alt="Avatar" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color);">
+                <div>
+                    <label for="profilePicture" class="form-label" style="margin-bottom: 6px;">Upload Profile Photo</label>
+                    <input type="file" id="profilePicture" name="profilePicture" class="form-input" style="font-size: 12px; padding: 6px 12px;">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="firstName" class="form-label">First Name</label>
+                    <input type="text" id="firstName" name="firstName" value="{{ user.firstName }}" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName" class="form-label">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" value="{{ user.lastName }}" class="form-input" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address (Read-only)</label>
+                <input type="email" id="email" value="{{ user.email }}" class="form-input" style="background: rgba(0,0,0,0.05); color: var(--text-muted);" readonly>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input type="text" id="phone" name="phone" value="{{ user.phone }}" class="form-input" placeholder="+1234567890">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn-primary">💾 Save Personal Info</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Role and Authority Information Card -->
+    <div class="card glass-panel" style="margin-bottom: 0; padding: 24px;">
+        <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">🛡️ Profile Authorization Status</h4>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+            Your account is assigned the system role of <strong>{{ user.roleEntity.displayName }}</strong>. Your active permissions include:
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for perm in user.roleEntity.permissions %}
+                <span class="badge" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 11px; padding: 4px 10px; border-radius: 8px;">
+                    🔑 {{ perm.name|replace({'ROLE_': ''}) }}
+                </span>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

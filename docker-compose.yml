@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  database:
+    image: mysql:8.0
+    container_name: sd_dev_database
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-splendid_kepler}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_USER: ${MYSQL_USER:-sd_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-sd_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  php:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sd_dev_php
+    restart: always
+    environment:
+      APP_ENV: dev
+      APP_SECRET: ${APP_SECRET:-dev_secret_key_12345}
+      DATABASE_URL: "mysql://${MYSQL_USER:-sd_user}:${MYSQL_PASSWORD:-sd_password}@database:3306/${MYSQL_DATABASE:-splendid_kepler}?serverVersion=8.0.32&charset=utf8mb4"
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      database:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    container_name: sd_dev_nginx
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+
+volumes:
+  db_data:

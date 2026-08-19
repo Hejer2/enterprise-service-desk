@@ -1,0 +1,36 @@
+<div class="card glass-panel">
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <span>Search Results for "{{ query }}"</span>
+        <span style="font-size: 12px; color: var(--text-muted);">{{ total }} article(s) found</span>
+    </h3>
+
+    {% if articles|length == 0 %}
+        {% include 'components/empty_state.html.twig' with {
+            'icon': '🔍',
+            'title': 'No articles found',
+            'message': 'No Knowledge Base articles match your search criteria. You can create a support ticket directly.',
+            'cta_text': '➕ Create Ticket',
+            'cta_url': path('app_ticket_create')
+        } %}
+    {% else %}
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            {% for art in articles %}
+                <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-secondary);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <a href="{{ path('app_knowledge_article_show', {'slug': art.slug}) }}" style="font-size: 16px; font-weight: 700; color: var(--primary-color); text-decoration: none;">
+                            {{ art.title }}
+                        </a>
+                        <span class="badge badge-open" style="font-size: 10px;">{{ art.category.name }}</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+                        {{ art.excerpt ?? art.content|slice(0, 150) ~ '...' }}
+                    </p>
+                    <div style="font-size: 11px; color: var(--text-muted); display: flex; gap: 16px;">
+                        <span>👁️ {{ art.viewCount }} views</span>
+                        <span>👍 {{ art.helpfulPercentage }}% helpful</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

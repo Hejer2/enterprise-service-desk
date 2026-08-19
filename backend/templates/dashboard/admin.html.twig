@@ -1,0 +1,93 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admin Dashboard | Employee Service Desk{% endblock %}
+
+{% block body %}
+<div class="main-header">
+    <div class="header-title">
+        <h1>Admin Control Dashboard</h1>
+        <p>Welcome, System Administrator. Here is a global view of the company service desk operations.</p>
+    </div>
+</div>
+
+<!-- Metrics Overview -->
+<div class="grid-3" style="margin-bottom: 40px;">
+    <div class="card glass-panel metric-card">
+        <span class="metric-title">👥 Registered Users</span>
+        <span class="metric-value">{{ total_users }}</span>
+    </div>
+    <div class="card glass-panel metric-card">
+        <span class="metric-title">🎫 Total Tickets Logged</span>
+        <span class="metric-value">{{ total_tickets }}</span>
+    </div>
+    <div class="card glass-panel metric-card">
+        <span class="metric-title">⏱️ Avg. Resolution Time</span>
+        <span class="metric-value" style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            {{ avg_resolution_time }} hrs
+        </span>
+    </div>
+</div>
+
+<div style="margin-bottom: 40px;">
+    <!-- Tickets by Category -->
+    <div class="card glass-panel" style="margin-bottom: 0;">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">🎫 Tickets by Category</h3>
+        {% if categories|length == 0 %}
+            <p style="color: var(--text-secondary); font-size: 14px;">No ticket category data recorded.</p>
+        {% else %}
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                {% for cat in categories %}
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px;">
+                            <span>{{ cat.category }}</span>
+                            <strong>{{ cat.count }}</strong>
+                        </div>
+                        {# simple HTML progress bar #}
+                        {% set pct = (cat.count / total_tickets * 100)|round(0) %}
+                        <div style="width: 100%; height: 8px; background: var(--border-color); border-radius: 999px; overflow: hidden;">
+                            <div style="width: {{ pct }}%; height: 100%; background: var(--primary-gradient);"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Technician Workload balancing -->
+<div class="card glass-panel">
+    <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">💼 Active Technician Workloads</h3>
+    {% if workloads|length == 0 %}
+        <p style="color: var(--text-secondary); font-size: 14px;">No active ticket workloads mapped to technicians.</p>
+    {% else %}
+        <div class="table-container">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Technician Name</th>
+                        <th>Active Tickets (Workload)</th>
+                        <th>Status Indicator</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tech in workloads %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ tech.firstName }} {{ tech.lastName }}</td>
+                            <td>{{ tech.activeTickets }}</td>
+                            <td>
+                                {% if tech.activeTickets > 5 %}
+                                    <span class="badge" style="background: #fee2e2; color: #b91c1c;">🔴 High Load</span>
+                                {% elseif tech.activeTickets > 2 %}
+                                    <span class="badge" style="background: #fefce8; color: #a16207;">🟡 Medium Load</span>
+                                {% else %}
+                                    <span class="badge" style="background: #ecfdf5; color: #047857;">🟢 Low Load</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

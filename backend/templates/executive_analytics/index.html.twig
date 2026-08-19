@@ -1,0 +1,173 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Executive Analytics | Service Desk{% endblock %}
+
+{% block body %}
+<div class="main-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+        <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 4px;">Executive Analytics & Performance</h1>
+        <p style="color: var(--text-secondary); font-size: 14px;">High-level operational overview, SLA performance, CSAT, technician leaderboard, and automation metrics.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button type="button" onclick="runExecutiveAiInsights()" class="btn btn-secondary" style="border-color: #8b5cf6; color: #8b5cf6; display: flex; align-items: center; gap: 6px;">
+            ✨ AI Insights
+        </button>
+        <a href="{{ path('app_executive_analytics_export_csv', filters) }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px;">
+            📊 Export CSV
+        </a>
+        <a href="{{ path('app_executive_analytics_export_pdf', filters) }}" class="btn btn-primary" style="display: flex; align-items: center; gap: 6px;">
+            📄 Export Summary
+        </a>
+    </div>
+</div>
+
+{# ── Reactive Date Range & Filter Bar ── #}
+<div class="card glass-panel" style="padding: 16px; margin-bottom: 24px;">
+    <form action="{{ path('app_executive_analytics_index') }}" method="get" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-weight: 700; font-size: 13px;">Date Range:</label>
+            <select name="preset" onchange="this.form.submit()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); font-size: 13px;">
+                <option value="30_days" {% if data.period.preset == '30_days' %}selected{% endif %}>Last 30 Days</option>
+                <option value="7_days" {% if data.period.preset == '7_days' %}selected{% endif %}>Last 7 Days</option>
+                <option value="today" {% if data.period.preset == 'today' %}selected{% endif %}>Today</option>
+                <option value="yesterday" {% if data.period.preset == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                <option value="this_month" {% if data.period.preset == 'this_month' %}selected{% endif %}>This Month</option>
+            </select>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-weight: 700; font-size: 13px;">Category:</label>
+            <select name="category" onchange="this.form.submit()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); font-size: 13px;">
+                <option value="">All Categories</option>
+                <option value="IT Support" {% if filters.category == 'IT Support' %}selected{% endif %}>IT Support</option>
+                <option value="Machine Maintenance" {% if filters.category == 'Machine Maintenance' %}selected{% endif %}>Machine Maintenance</option>
+                <option value="Leave Request & HR" {% if filters.category == 'Leave Request & HR' %}selected{% endif %}>Leave Request & HR</option>
+            </select>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-weight: 700; font-size: 13px;">Priority:</label>
+            <select name="priority" onchange="this.form.submit()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); font-size: 13px;">
+                <option value="">All Priorities</option>
+                <option value="Critical" {% if filters.priority == 'Critical' %}selected{% endif %}>Critical</option>
+                <option value="High" {% if filters.priority == 'High' %}selected{% endif %}>High</option>
+                <option value="Medium" {% if filters.priority == 'Medium' %}selected{% endif %}>Medium</option>
+                <option value="Low" {% if filters.priority == 'Low' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+
+        {% if filters.category or filters.priority %}
+            <a href="{{ path('app_executive_analytics_index') }}" class="btn btn-secondary" style="font-size: 12px; padding: 4px 8px;">Clear Filters</a>
+        {% endif %}
+    </form>
+</div>
+
+{# ── KPI Cards Section ── #}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px;">
+    <div class="card glass-panel" style="padding: 20px;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Tickets</div>
+        <div style="font-size: 28px; font-weight: 800; margin: 4px 0;">{{ data.kpis.totalTickets }}</div>
+        {% if data.comparison.totalTickets is defined %}
+            <div style="font-size: 12px; font-weight: 700; color: {{ data.comparison.totalTickets.changePct >= 0 ? '#15803d' : '#b45309' }};">
+                {{ data.comparison.totalTickets.changePct >= 0 ? '▲' : '▼' }} {{ data.comparison.totalTickets.changePct }}% vs prev period
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card glass-panel" style="padding: 20px;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Open Tickets</div>
+        <div style="font-size: 28px; font-weight: 800; color: #3b82f6; margin: 4px 0;">{{ data.kpis.openTickets }}</div>
+        {% if data.comparison.openTickets is defined %}
+            <div style="font-size: 12px; font-weight: 700; color: #64748b;">
+                Previous: {{ data.comparison.openTickets.previous }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card glass-panel" style="padding: 20px;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">SLA Compliance</div>
+        <div style="font-size: 28px; font-weight: 800; color: #10b981; margin: 4px 0;">{{ data.kpis.slaCompliancePct }}%</div>
+        <div style="font-size: 12px; color: #ef4444; font-weight: 700;">{{ data.kpis.slaBreaches }} breaches</div>
+    </div>
+
+    <div class="card glass-panel" style="padding: 20px;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Average CSAT</div>
+        <div style="font-size: 28px; font-weight: 800; color: #f59e0b; margin: 4px 0;">⭐ {{ data.kpis.avgCsat }}</div>
+        <div style="font-size: 12px; color: var(--text-muted);">{{ data.kpis.csatRatingsCount }} total ratings</div>
+    </div>
+
+    <div class="card glass-panel" style="padding: 20px;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Automation Executions</div>
+        <div style="font-size: 28px; font-weight: 800; color: #8b5cf6; margin: 4px 0;">⚡ {{ data.kpis.automationExecutions }}</div>
+        <div style="font-size: 12px; color: #10b981; font-weight: 700;">100% automated actions</div>
+    </div>
+</div>
+
+{# ── Technician Performance Table ── #}
+<div class="card glass-panel" style="padding: 24px; margin-bottom: 32px;">
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+        Technician Performance Leaderboard
+    </h3>
+
+    <div class="table-container">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Technician</th>
+                    <th>Tickets Assigned</th>
+                    <th>Tickets Resolved</th>
+                    <th>Completion Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tech in data.technicians %}
+                    <tr>
+                        <td style="font-weight: 700;">{{ tech.name }}</td>
+                        <td>{{ tech.assigned }}</td>
+                        <td>{{ tech.resolved }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="flex: 1; height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden;">
+                                    <div style="width: {{ tech.completionRate }}%; height: 100%; background: #10b981;"></div>
+                                </div>
+                                <span style="font-size: 12px; font-weight: 700;">{{ tech.completionRate }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No technician performance data for this period.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function runExecutiveAiInsights() {
+        const toast = window.showToast || function(m) { alert(m); };
+        toast('✨ Generating Executive AI Insights...', 'info');
+
+        fetch('/executive-analytics/ai/insights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('AI service unavailable');
+            return res.json();
+        })
+        .then(data => {
+            const insights = data.insights || [];
+            const text = insights.map(i => `• ${i.title}: ${i.description}\nRecommendation: ${i.recommendation}`).join('\n\n');
+            if (window.showConfirmDialog) {
+                window.showConfirmDialog(
+                    '✨ Executive AI Strategic Insights',
+                    text || 'SLA compliance and operational metrics are performing at target rates.'
+                );
+            }
+        })
+        .catch(() => {
+            toast('AI service is temporarily unavailable. Please try again later.', 'warning');
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Notification Settings | Service Desk{% endblock %}
+
+{% block body %}
+<div style="max-width: 700px; margin: 0 auto;">
+    <div class="card glass-panel" style="padding: 32px;">
+        <h1 style="font-size: 22px; font-weight: 800; margin-bottom: 8px;">Notification Settings</h1>
+        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 24px;">Manage how and when you receive real-time alerts and updates.</p>
+
+        <form action="{{ path('app_settings_notifications') }}" method="post">
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px;">Ticket Assignments</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Receive alerts when a ticket is assigned to you.</div>
+                    </div>
+                    <input type="checkbox" name="ticketAssignments" {% if preference.ticketAssignments %}checked{% endif %} style="width: 18px; height: 18px;">
+                </label>
+
+                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px;">Ticket Replies</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Receive real-time notifications on new messages.</div>
+                    </div>
+                    <input type="checkbox" name="ticketReplies" {% if preference.ticketReplies %}checked{% endif %} style="width: 18px; height: 18px;">
+                </label>
+
+                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px;">Status Changes</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Get notified when ticket status changes.</div>
+                    </div>
+                    <input type="checkbox" name="ticketStatusChanges" {% if preference.ticketStatusChanges %}checked{% endif %} style="width: 18px; height: 18px;">
+                </label>
+
+                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px;">SLA Warnings & Breaches</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Alerts for tickets approaching SLA deadline or breached.</div>
+                    </div>
+                    <input type="checkbox" name="slaAlerts" {% if preference.slaAlerts %}checked{% endif %} style="width: 18px; height: 18px;">
+                </label>
+
+                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px;">Browser Push Notifications</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Enable native browser desktop popups.</div>
+                    </div>
+                    <input type="checkbox" name="browserNotifications" {% if preference.browserNotifications %}checked{% endif %} style="width: 18px; height: 18px;">
+                </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn-primary">Save Preferences</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

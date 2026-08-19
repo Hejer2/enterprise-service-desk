@@ -1,0 +1,78 @@
+# ==============================================================================
+# Git Ignore Configuration - Enterprise Service Desk
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Environment & Secret Files (DO NOT COMMIT REAL CREDENTIALS)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.crt
+
+# ------------------------------------------------------------------------------
+# Symfony / Backend
+# ------------------------------------------------------------------------------
+backend/.env
+backend/.env.local
+backend/.env.*.local
+!backend/.env.example
+backend/vendor/
+backend/var/
+backend/var/cache/
+backend/var/log/
+backend/public/bundles/
+backend/public/assets/
+backend/phpunit.xml
+backend/.phpunit.cache/
+backend/config/jwt/*.pem
+backend/config/jwt/*.key
+backend/query
+
+# ------------------------------------------------------------------------------
+# Flutter / Mobile
+# ------------------------------------------------------------------------------
+mobile/.env
+mobile/.env.*
+!mobile/.env.example
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.pub-cache/
+mobile/.pub/
+mobile/*.iml
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/app/debug
+mobile/android/app/profile
+mobile/android/app/release
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/.last_build_id
+
+# ------------------------------------------------------------------------------
+# General Dependencies
+# ------------------------------------------------------------------------------
+vendor/
+node_modules/
+
+# ------------------------------------------------------------------------------
+# IDE, OS, & Temporary Files
+# ------------------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.log
+.DS_Store
+Thumbs.db
+
+# ------------------------------------------------------------------------------
+# Antigravity Brain Scratch / Logs
+# ------------------------------------------------------------------------------
+.system_generated/

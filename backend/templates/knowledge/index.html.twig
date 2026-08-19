@@ -1,0 +1,113 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Knowledge Base | Employee Self-Service Portal{% endblock %}
+
+{% block body %}
+<!-- Hero Search Section -->
+<div class="card glass-panel" style="padding: 40px 24px; text-align: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; margin-bottom: 32px; border: none;">
+    <h1 style="font-size: 28px; color: white; margin-bottom: 8px;">How can we help you today?</h1>
+    <p style="color: #94a3b8; font-size: 15px; margin-bottom: 24px;">Search our self-service Knowledge Base or browse common topics below.</p>
+    
+    <div style="max-width: 600px; margin: 0 auto; position: relative;">
+        <input type="text" id="kbSearchInput" class="form-input" placeholder="Search for passwords, Wi-Fi, printers, machinery..." 
+               style="width: 100%; padding: 14px 20px; font-size: 15px; border-radius: 12px; border: 1px solid #475569; background: #334155; color: white;">
+        <span style="position: absolute; right: 16px; top: 14px; font-size: 18px;">🔍</span>
+    </div>
+</div>
+
+<!-- Search Results Container (Hidden by default until user types) -->
+<div id="searchResultsContainer" style="display: none; margin-bottom: 32px;"></div>
+
+<div id="mainKbContent">
+    <!-- Categories Grid -->
+    <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 16px;">Browse Categories</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-bottom: 40px;">
+        {% for cat in categories %}
+            <a href="{{ path('app_knowledge_category', {'slug': cat.slug}) }}" class="card glass-panel" style="text-decoration: none; padding: 20px; display: flex; flex-direction: column; gap: 8px; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                <div style="font-size: 28px;">{{ cat.icon }}</div>
+                <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">{{ cat.name }}</h3>
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">{{ cat.description }}</p>
+            </a>
+        {% endfor %}
+    </div>
+
+    <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;">
+        <!-- Popular Articles -->
+        <div class="card glass-panel" style="margin-bottom: 0;">
+            <h3 style="font-size: 17px; font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                🔥 Popular Articles
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                {% for art in popularArticles %}
+                    <a href="{{ path('app_knowledge_article_show', {'slug': art.slug}) }}" style="text-decoration: none; display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border-color);">
+                        <span style="font-size: 14px; font-weight: 600; color: var(--primary-color);">{{ art.title }}</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">{{ art.viewCount }} views</span>
+                    </a>
+                {% else %}
+                    <p style="font-size: 13px; color: var(--text-muted);">No popular articles yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Articles -->
+        <div class="card glass-panel" style="margin-bottom: 0;">
+            <h3 style="font-size: 17px; font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                🕒 Recently Updated
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                {% for art in recentArticles %}
+                    <a href="{{ path('app_knowledge_article_show', {'slug': art.slug}) }}" style="text-decoration: none; display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border-color);">
+                        <span style="font-size: 14px; font-weight: 600; color: var(--primary-color);">{{ art.title }}</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">{{ art.publishedAt ? art.publishedAt|date('d M Y') : '' }}</span>
+                    </a>
+                {% else %}
+                    <p style="font-size: 13px; color: var(--text-muted);">No recent articles yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Ticket Fallback Banner -->
+    <div class="card glass-panel" style="padding: 24px; background: #eff6ff; border-color: #bfdbfe; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <h3 style="font-size: 16px; font-weight: 700; color: #1e3a8a;">Can't find what you're looking for?</h3>
+            <p style="font-size: 13px; color: #1d4ed8; margin-top: 2px;">Submit a support ticket and our operations team will assist you shortly.</p>
+        </div>
+        <a href="{{ path('app_ticket_create') }}" class="btn btn-primary" style="padding: 10px 20px;">➕ Create Support Ticket</a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('kbSearchInput');
+        const resultsContainer = document.getElementById('searchResultsContainer');
+        const mainContent = document.getElementById('mainKbContent');
+        let timer = null;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timer);
+            const q = searchInput.value.trim();
+
+            if (q.length === 0) {
+                resultsContainer.style.display = 'none';
+                mainContent.style.display = 'block';
+                return;
+            }
+
+            timer = setTimeout(function() {
+                resultsContainer.style.display = 'block';
+                mainContent.style.display = 'none';
+                resultsContainer.innerHTML = '<div style="padding: 32px; text-align: center;"><div class="skeleton skeleton-card"></div></div>';
+
+                fetch(`/knowledge/search?q=${encodeURIComponent(q)}&ajax=1`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.text())
+                .then(html => {
+                    resultsContainer.innerHTML = html;
+                });
+            }, 300);
+        });
+    });
+</script>
+{% endblock %}

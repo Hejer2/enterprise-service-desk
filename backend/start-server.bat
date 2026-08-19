@@ -1,0 +1,3 @@
+@echo off
+echo Starting PHP development server with local php.ini configuration...
+php -S 0.0.0.0:8000 -t "%~dp0public" -c "%~dp0php.ini"

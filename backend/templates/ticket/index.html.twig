@@ -1,0 +1,307 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tickets | Employee Service Desk{% endblock %}
+
+{% block body %}
+<div class="main-header">
+    <div class="header-title">
+        <h1>Service Desk Tickets</h1>
+        <p>Browse, filter, and track support tickets.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ path('app_ticket_create') }}" class="btn btn-primary">➕ Create Ticket</a>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card glass-panel" style="padding: 20px; margin-bottom: 24px;">
+    <form id="ticketFilterForm" action="{{ path('app_ticket_index') }}" method="get" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+        <div style="flex: 1; min-width: 200px;">
+            <label for="search" class="form-label" style="font-size: 12px; font-weight: 600;">Search keywords</label>
+            <input type="text" id="search" name="search" value="{{ search }}" class="form-input" placeholder="Number, title, description...">
+        </div>
+        
+        <div style="width: 150px;">
+            <label for="status" class="form-label" style="font-size: 12px; font-weight: 600;">Status</label>
+            <select id="status" name="status" class="form-input">
+                <option value="">All Statuses</option>
+                <option value="Open" {% if selected_status == 'Open' %}selected{% endif %}>Open</option>
+                <option value="Assigned" {% if selected_status == 'Assigned' %}selected{% endif %}>Assigned</option>
+                <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Waiting for Employee" {% if selected_status == 'Waiting for Employee' %}selected{% endif %}>Waiting for Employee</option>
+                <option value="Waiting for Technician" {% if selected_status == 'Waiting for Technician' %}selected{% endif %}>Waiting for Technician</option>
+                <option value="Approved" {% if selected_status == 'Approved' %}selected{% endif %}>Approved</option>
+                <option value="Rejected" {% if selected_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                <option value="Resolved" {% if selected_status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                <option value="Closed" {% if selected_status == 'Closed' %}selected{% endif %}>Closed</option>
+                <option value="Cancelled" {% if selected_status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+        </div>
+
+        <div style="width: 150px;">
+            <label for="priority" class="form-label" style="font-size: 12px; font-weight: 600;">Priority</label>
+            <select id="priority" name="priority" class="form-input">
+                <option value="">All Priorities</option>
+                <option value="Low" {% if selected_priority == 'Low' %}selected{% endif %}>Low</option>
+                <option value="Medium" {% if selected_priority == 'Medium' %}selected{% endif %}>Medium</option>
+                <option value="High" {% if selected_priority == 'High' %}selected{% endif %}>High</option>
+                <option value="Critical" {% if selected_priority == 'Critical' %}selected{% endif %}>Critical</option>
+            </select>
+        </div>
+
+        <div style="width: 180px;">
+            <label for="category" class="form-label" style="font-size: 12px; font-weight: 600;">Category</label>
+            <select id="category" name="category" class="form-input">
+                <option value="">All Categories</option>
+                <option value="IT Support" {% if selected_category == 'IT Support' %}selected{% endif %}>IT Support</option>
+                <option value="Machine Maintenance" {% if selected_category == 'Machine Maintenance' %}selected{% endif %}>Machine Maintenance</option>
+                <option value="Leave Request" {% if selected_category == 'Leave Request' %}selected{% endif %}>Leave Request</option>
+                <option value="General Request" {% if selected_category == 'General Request' %}selected{% endif %}>General Request</option>
+                <option value="Incident" {% if selected_category == 'Incident' %}selected{% endif %}>Incident</option>
+                <option value="Suggestion" {% if selected_category == 'Suggestion' %}selected{% endif %}>Suggestion</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="min-height: 42px;">🔍 Filter</button>
+        <button type="button" onclick="clearWebFilters()" class="btn btn-secondary" style="background: transparent; border: 1px solid var(--border-color, #e2e8f0); min-height: 42px;">Clear Filters</button>
+    </form>
+
+    <!-- Removable Active Filter Chips -->
+    <div id="activeFilterChips" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;"></div>
+</div>
+
+<!-- Floating Bulk Action Toolbar -->
+<div id="bulkToolbar" style="display: none; position: sticky; top: 16px; z-index: 100; background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin-bottom: 20px; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="background: #2563eb; padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: bold;" id="bulkCountLabel">0 Selected</span>
+        <span style="font-size: 13px; color: #cbd5e1;">Bulk Actions:</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <!-- Bulk Assign Dropdown -->
+        {% if technicians is defined and technicians|length > 0 %}
+            <select id="bulkAssignSelect" class="form-input" style="font-size: 12px; padding: 4px 8px; min-height: 32px; width: 160px; background: #334155; color: white; border-color: #475569;" onchange="if(this.value) submitBulkAction('assign', this.value)">
+                <option value="">Assign to...</option>
+                {% for tech in technicians %}
+                    <option value="{{ tech.id }}">{{ tech.firstName }} {{ tech.lastName }}</option>
+                {% endfor %}
+            </select>
+        {% endif %}
+
+        <!-- Bulk Status Dropdown -->
+        <select id="bulkStatusSelect" class="form-input" style="font-size: 12px; padding: 4px 8px; min-height: 32px; width: 150px; background: #334155; color: white; border-color: #475569;" onchange="if(this.value) submitBulkAction('status', this.value)">
+            <option value="">Change status...</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Waiting for Employee">Waiting for Employee</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Closed">Closed</option>
+        </select>
+
+        <!-- Bulk Priority Dropdown -->
+        <select id="bulkPrioritySelect" class="form-input" style="font-size: 12px; padding: 4px 8px; min-height: 32px; width: 140px; background: #334155; color: white; border-color: #475569;" onchange="if(this.value) submitBulkAction('priority', this.value)">
+            <option value="">Set priority...</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+        </select>
+
+        <button type="button" class="btn btn-primary" style="background: #ef4444; border: none; font-size: 12px; padding: 6px 12px; min-height: 32px;" onclick="submitBulkAction('close', 'Closed')">
+            🔒 Bulk Close
+        </button>
+    </div>
+</div>
+
+<!-- Hidden inputs for page, limit, sort, order -->
+<input type="hidden" id="pageInput" name="page" value="{{ page|default(1) }}">
+<input type="hidden" id="limitInput" name="limit" value="{{ limit|default(25) }}">
+<input type="hidden" id="sortInput" name="sort" value="{{ sort|default('createdAt') }}">
+<input type="hidden" id="orderInput" name="order" value="{{ order|default('DESC') }}">
+
+<!-- Tickets Table Container -->
+<div id="ticketsTableContainer" class="card glass-panel" style="position: relative; min-height: 200px;">
+    {% include 'ticket/_ticket_list_table.html.twig' %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('ticketFilterForm');
+        const searchInput = document.getElementById('search');
+        const statusSelect = document.getElementById('status');
+        const prioritySelect = document.getElementById('priority');
+        const categorySelect = document.getElementById('category');
+        const container = document.getElementById('ticketsTableContainer');
+        let debounceTimer = null;
+
+        function updateChips() {
+            const chipsContainer = document.getElementById('activeFilterChips');
+            if (!chipsContainer) return;
+            chipsContainer.innerHTML = '';
+
+            const activeFilters = [];
+            if (searchInput.value.trim()) activeFilters.push({ key: 'search', label: `Search: ${searchInput.value.trim()}` });
+            if (statusSelect.value) activeFilters.push({ key: 'status', label: `Status: ${statusSelect.value}` });
+            if (prioritySelect.value) activeFilters.push({ key: 'priority', label: `Priority: ${prioritySelect.value}` });
+            if (categorySelect.value) activeFilters.push({ key: 'category', label: `Category: ${categorySelect.value}` });
+
+            activeFilters.forEach(filter => {
+                const chip = document.createElement('span');
+                chip.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #eff6ff; color: #2563eb; border-radius: 12px; font-size: 12px; font-weight: 600; border: 1px solid #bfdbfe;';
+                chip.innerHTML = `${filter.label} <button type="button" onclick="removeFilter('${filter.key}')" style="border: none; background: transparent; color: #2563eb; cursor: pointer; font-weight: bold; font-size: 12px;">✕</button>`;
+                chipsContainer.appendChild(chip);
+            });
+        }
+
+        window.triggerAjaxFilter = function() {
+            updateChips();
+            const formData = new FormData(form);
+            formData.set('page', document.getElementById('pageInput').value);
+            formData.set('limit', document.getElementById('limitInput').value);
+            formData.set('sort', document.getElementById('sortInput').value);
+            formData.set('order', document.getElementById('orderInput').value);
+
+            const params = new URLSearchParams(formData);
+            params.set('ajax', '1');
+
+            container.innerHTML = `
+                <div style="padding: 24px;">
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                </div>
+            `;
+
+            fetch(`${form.action}?${params.toString()}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.text())
+            .then(html => {
+                container.innerHTML = html;
+                window.updateBulkToolbar();
+            })
+            .catch(() => {
+                container.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 32px;">Failed to filter tickets. Please try again.</p>';
+            });
+        };
+
+        // Selection & Bulk Toolbar JS Handlers
+        window.getSelectedTicketIds = function() {
+            const checkboxes = document.querySelectorAll('.ticket-checkbox:checked');
+            return Array.from(checkboxes).map(cb => parseInt(cb.value));
+        };
+
+        window.updateBulkToolbar = function() {
+            const selectedIds = window.getSelectedTicketIds();
+            const toolbar = document.getElementById('bulkToolbar');
+            const label = document.getElementById('bulkCountLabel');
+            if (toolbar && label) {
+                if (selectedIds.length > 0) {
+                    toolbar.style.display = 'flex';
+                    label.textContent = `${selectedIds.length} Selected`;
+                } else {
+                    toolbar.style.display = 'none';
+                }
+            }
+        };
+
+        window.toggleSelectAllTickets = function(masterCb) {
+            const checkboxes = document.querySelectorAll('.ticket-checkbox');
+            checkboxes.forEach(cb => cb.checked = masterCb.checked);
+            window.updateBulkToolbar();
+        };
+
+        window.submitBulkAction = async function(action, value) {
+            const selectedIds = window.getSelectedTicketIds();
+            if (selectedIds.length === 0) return;
+
+            const isDestructive = action === 'close' || (action === 'status' && value === 'Closed');
+            if (isDestructive) {
+                const ok = await window.showConfirmDialog('Confirm Bulk Action', `Are you sure you want to bulk ${action} ${selectedIds.length} ticket(s)?`, true);
+                if (!ok) {
+                    document.getElementById('bulkStatusSelect').value = '';
+                    document.getElementById('bulkPrioritySelect').value = '';
+                    if (document.getElementById('bulkAssignSelect')) document.getElementById('bulkAssignSelect').value = '';
+                    return;
+                }
+            }
+
+            try {
+                const res = await fetch('/tickets/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ action: action, ticketIds: selectedIds, value: value })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (window.showToast) window.showToast(data.message, 'success');
+                    window.triggerAjaxFilter();
+                } else {
+                    if (window.showToast) window.showToast(data.message || 'Bulk operation failed.', 'error');
+                }
+            } catch (e) {
+                if (window.showToast) window.showToast('Failed to perform bulk operation', 'error');
+            }
+
+            document.getElementById('bulkStatusSelect').value = '';
+            document.getElementById('bulkPrioritySelect').value = '';
+            if (document.getElementById('bulkAssignSelect')) document.getElementById('bulkAssignSelect').value = '';
+        };
+
+        window.changeWebPage = function(page) {
+            document.getElementById('pageInput').value = page;
+            window.triggerAjaxFilter();
+        };
+
+        window.changePageSize = function(limit) {
+            document.getElementById('limitInput').value = limit;
+            document.getElementById('pageInput').value = 1;
+            window.triggerAjaxFilter();
+        };
+
+        window.changeWebSort = function(sortField) {
+            const currentSort = document.getElementById('sortInput').value;
+            const currentOrder = document.getElementById('orderInput').value;
+
+            if (currentSort === sortField) {
+                document.getElementById('orderInput').value = (currentOrder === 'ASC') ? 'DESC' : 'ASC';
+            } else {
+                document.getElementById('sortInput').value = sortField;
+                document.getElementById('orderInput').value = 'DESC';
+            }
+            window.triggerAjaxFilter();
+        };
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(window.triggerAjaxFilter, 300);
+        });
+
+        statusSelect.addEventListener('change', window.triggerAjaxFilter);
+        prioritySelect.addEventListener('change', window.triggerAjaxFilter);
+        categorySelect.addEventListener('change', window.triggerAjaxFilter);
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            window.triggerAjaxFilter();
+        });
+
+        window.removeFilter = function(key) {
+            if (key === 'search') searchInput.value = '';
+            if (key === 'status') statusSelect.value = '';
+            if (key === 'priority') prioritySelect.value = '';
+            if (key === 'category') categorySelect.value = '';
+            window.triggerAjaxFilter();
+        };
+
+        window.clearWebFilters = function() {
+            searchInput.value = '';
+            statusSelect.value = '';
+            prioritySelect.value = '';
+            categorySelect.value = '';
+            window.triggerAjaxFilter();
+        };
+
+        updateChips();
+    });
+</script>
+{% endblock %}

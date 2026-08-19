@@ -1,0 +1,94 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}HR Dashboard | Employee Service Desk{% endblock %}
+
+{% block body %}
+<div class="main-header">
+    <div class="header-title">
+        <h1>HR Leave Dashboard</h1>
+        <p>Welcome back, {{ app.user.firstName }}. Manage employee leave requests and approvals.</p>
+    </div>
+</div>
+
+<!-- Metrics Overview -->
+<div class="grid-3" style="margin-bottom: 40px;">
+    <div class="card glass-panel metric-card">
+        <span class="metric-title">⏳ Pending Leave Requests</span>
+        <span class="metric-value">{{ pending_leave }}</span>
+    </div>
+    <div class="card glass-panel metric-card">
+        <span class="metric-title" style="color: #10b981;">✅ Approved Leave</span>
+        <span class="metric-value" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            {{ approved_leave }}
+        </span>
+    </div>
+    <div class="card glass-panel metric-card">
+        <span class="metric-title" style="color: #ef4444;">❌ Rejected Leave</span>
+        <span class="metric-value" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            {{ rejected_leave }}
+        </span>
+    </div>
+</div>
+
+<!-- Leave Calendar / List -->
+<div class="card glass-panel">
+    <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">📅 Leave Registry & Calendar</h3>
+    
+    {% if leave_requests|length == 0 %}
+        <p style="color: var(--text-secondary); font-size: 14px;">No leave requests have been logged in the system.</p>
+    {% else %}
+        <div class="table-container">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Leave Type</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Duration</th>
+                        <th>Ticket</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in leave_requests %}
+                        <tr>
+                            <td style="font-weight: 600;">
+                                {{ req.ticket.createdBy.fullName }}
+                            </td>
+                            <td>
+                                {{ req.leaveType.name }}
+                            </td>
+                            <td>
+                                {{ req.startDate|date('d M Y') }}
+                            </td>
+                            <td>
+                                {{ req.endDate|date('d M Y') }}
+                            </td>
+                            <td>
+                                {% if req.halfDay %}
+                                    Half Day
+                                {% else %}
+                                    {# Simple start/end date difference calculation #}
+                                    {% set days = (req.endDate.timestamp - req.startDate.timestamp) / 86400 + 1 %}
+                                    {{ days|round(0, 'floor') }} Day(s)
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ path('app_ticket_show', {'id': req.ticket.id}) }}" style="font-weight: 600;">
+                                    {{ req.ticket.ticketNumber }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ req.ticket.status|lower }}">
+                                    {{ req.ticket.status }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

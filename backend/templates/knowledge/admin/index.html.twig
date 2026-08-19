@@ -1,0 +1,106 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Knowledge Base Management | Admin Portal{% endblock %}
+
+{% block body %}
+<div class="main-header">
+    <div class="header-title">
+        <h1>Knowledge Base Management</h1>
+        <p>Create, edit, publish, and manage self-service articles.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ path('app_admin_knowledge_article_new') }}" class="btn btn-primary">➕ Create Article</a>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card glass-panel" style="padding: 20px; margin-bottom: 24px;">
+    <form action="{{ path('app_admin_knowledge_articles') }}" method="get" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+        <div style="flex: 1; min-width: 200px;">
+            <label class="form-label" style="font-size: 12px;">Search articles</label>
+            <input type="text" name="search" value="{{ search }}" class="form-input" placeholder="Title...">
+        </div>
+        
+        <div style="width: 160px;">
+            <label class="form-label" style="font-size: 12px;">Status</label>
+            <select name="status" class="form-input">
+                <option value="">All Statuses</option>
+                <option value="DRAFT" {% if selected_status == 'DRAFT' %}selected{% endif %}>Draft</option>
+                <option value="PUBLISHED" {% if selected_status == 'PUBLISHED' %}selected{% endif %}>Published</option>
+                <option value="ARCHIVED" {% if selected_status == 'ARCHIVED' %}selected{% endif %}>Archived</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="min-height: 42px;">🔍 Filter</button>
+    </form>
+</div>
+
+<div class="card glass-panel">
+    <div class="table-container">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Views</th>
+                    <th>Helpful %</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for art in articles %}
+                    <tr>
+                        <td style="font-weight: 700; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <a href="{{ path('app_knowledge_article_show', {'slug': art.slug}) }}" target="_blank" style="color: var(--primary-color); text-decoration: none;">
+                                {{ art.title }}
+                            </a>
+                        </td>
+                        <td>{{ art.category.name }}</td>
+                        <td>
+                            {% if art.status == 'PUBLISHED' %}
+                                <span class="badge badge-open">PUBLISHED</span>
+                            {% elseif art.status == 'DRAFT' %}
+                                <span class="badge badge-draft">DRAFT</span>
+                            {% else %}
+                                <span class="badge badge-closed">ARCHIVED</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ art.viewCount }}</td>
+                        <td>{{ art.helpfulPercentage }}%</td>
+                        <td style="font-size: 13px; color: var(--text-muted);">{{ art.createdAt|date('d M Y') }}</td>
+                        <td>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <a href="{{ path('app_admin_knowledge_article_edit', {'id': art.id}) }}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">✏️ Edit</a>
+                                
+                                {% if art.status != 'PUBLISHED' %}
+                                    <form action="{{ path('app_admin_knowledge_article_publish', {'id': art.id}) }}" method="post" style="display: inline;">
+                                        <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 11px; background: #059669; border: none;">▶ Publish</button>
+                                    </form>
+                                {% endif %}
+
+                                {% if art.status != 'ARCHIVED' %}
+                                    <form action="{{ path('app_admin_knowledge_article_archive', {'id': art.id}) }}" method="post" style="display: inline;">
+                                        <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; background: #f59e0b; color: white; border: none;">⏸ Archive</button>
+                                    </form>
+                                {% endif %}
+
+                                {% if is_granted('ROLE_ADMIN') or art.createdBy == app.user %}
+                                    <form action="{{ path('app_admin_knowledge_article_delete', {'id': art.id}) }}" method="post" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this article?');">
+                                        <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; background: #ef4444; color: white; border: none;">🗑️ Delete</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">No articles found. Click "Create Article" to write your first article.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

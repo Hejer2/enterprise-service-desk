@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Ticket #{{ ticket.ticketNumber }}{% endblock %}
+
+{% block body %}
+<div class="main-header">
+    <div class="header-title">
+        <h1>Edit Ticket {{ ticket.ticketNumber }}</h1>
+        <p>You can edit this ticket because it is still open and has no staff response.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="btn btn-secondary">⬅️ Cancel</a>
+    </div>
+</div>
+
+<div class="card glass-panel" style="max-width: 800px; margin: 0 auto;">
+    <form action="{{ path('app_ticket_edit', {'id': ticket.id}) }}" method="post">
+        <div class="form-group">
+            <label for="title" class="form-label">Ticket Title / Summary</label>
+            <input type="text" id="title" name="title" value="{{ ticket.title }}" class="form-input" required>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="category" class="form-label">Category</label>
+                <select id="category" name="category" class="form-input" required>
+                    <option value="IT Support" {% if ticket.category == 'IT Support' %}selected{% endif %}>IT Support</option>
+                    <option value="Machine Maintenance" {% if ticket.category == 'Machine Maintenance' %}selected{% endif %}>Machine Maintenance</option>
+                    <option value="Leave Request" {% if ticket.category == 'Leave Request' %}selected{% endif %}>Leave Request</option>
+                    <option value="General Request" {% if ticket.category == 'General Request' %}selected{% endif %}>General Request</option>
+                    <option value="Incident" {% if ticket.category == 'Incident' %}selected{% endif %}>Incident</option>
+                    <option value="Suggestion" {% if ticket.category == 'Suggestion' %}selected{% endif %}>Suggestion</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="priority" class="form-label">Priority</label>
+                <select id="priority" name="priority" class="form-input" required>
+                    <option value="Low" {% if ticket.priority == 'Low' %}selected{% endif %}>Low</option>
+                    <option value="Medium" {% if ticket.priority == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="High" {% if ticket.priority == 'High' %}selected{% endif %}>High</option>
+                    <option value="Critical" {% if ticket.priority == 'Critical' %}selected{% endif %}>Critical</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description" class="form-label">Detailed Description</label>
+            <textarea id="description" name="description" class="form-input" rows="8" required>{{ ticket.description }}</textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 16px; margin-top: 32px;">
+            <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Enterprise Service Desk Report</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11pt;
+            color: #1e293b;
+            margin: 20px;
+        }
+        .header {
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 0 0 4px 0;
+        }
+        .subtitle {
+            font-size: 10pt;
+            color: #64748b;
+        }
+        .meta-bar {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+        .kpi-grid {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+        }
+        .kpi-card {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 12px;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .kpi-val {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #1d4ed8;
+        }
+        .kpi-lbl {
+            font-size: 8pt;
+            color: #475569;
+            text-transform: uppercase;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+        table.data-table th, table.data-table td {
+            border: 1px solid #cbd5e1;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        table.data-table th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            color: #334155;
+        }
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1e293b;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 8pt;
+            color: #94a3b8;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">Enterprise Operations & Service Desk System</div>
+        <div class="subtitle">Executive Performance & Ticket Management Report</div>
+    </div>
+
+    <div class="meta-bar">
+        <strong>Date Range:</strong> {{ startDate }} to {{ endDate }} &nbsp;|&nbsp; 
+        <strong>Category Filter:</strong> {{ category }} &nbsp;|&nbsp; 
+        <strong>Generated On:</strong> {{ generatedAt }}
+    </div>
+
+    <table class="kpi-grid">
+        <tr>
+            <td class="kpi-card">
+                <div class="kpi-val">{{ totalTickets }}</div>
+                <div class="kpi-lbl">Total Tickets</div>
+            </td>
+            <td class="kpi-card" style="background: #f0fdf4; border-color: #bbf7d0;">
+                <div class="kpi-val" style="color: #15803d;">{{ closedCount }}</div>
+                <div class="kpi-lbl">Closed / Resolved</div>
+            </td>
+            <td class="kpi-card" style="background: #fffbebfb; border-color: #fef3c7;">
+                <div class="kpi-val" style="color: #b45309;">{{ avgResolutionTime }} hrs</div>
+                <div class="kpi-lbl">Avg Resolution Time</div>
+            </td>
+            <td class="kpi-card" style="background: #fefce8; border-color: #fef08a;">
+                <div class="kpi-val" style="color: #a16207;">{{ csatAverage }}/5.0</div>
+                <div class="kpi-lbl">CSAT Rating ({{ csatCount }} reviews)</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">Ticket Status Distribution</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Ticket Count</th>
+                <th>Percentage</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for status, count in byStatus %}
+                <tr>
+                    <td><strong>{{ status }}</strong></td>
+                    <td>{{ count }}</td>
+                    <td>{{ (totalTickets > 0 ? (count / totalTickets * 100)|round(1) : 0) }}%</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">Tickets by Priority & Category</div>
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 8px;">
+                <table class="data-table">
+                    <thead><tr><th>Priority</th><th>Count</th></tr></thead>
+                    <tbody>
+                        {% for priority, count in byPriority %}
+                            <tr><td>{{ priority }}</td><td>{{ count }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </td>
+            <td style="width: 50%; vertical-align: top; padding-left: 8px;">
+                <table class="data-table">
+                    <thead><tr><th>Category</th><th>Count</th></tr></thead>
+                    <tbody>
+                        {% for cat, count in byCategory %}
+                            <tr><td>{{ cat }}</td><td>{{ count }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">Recent Tickets Listing</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Ticket #</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets|slice(0, 30) %}
+                <tr>
+                    <td><strong>{{ ticket.ticketNumber }}</strong></td>
+                    <td>{{ ticket.title }}</td>
+                    <td>{{ ticket.category }}</td>
+                    <td>{{ ticket.priority }}</td>
+                    <td>{{ ticket.status }}</td>
+                    <td>{{ ticket.createdAt|date('Y-m-d H:i') }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Confidential — Enterprise Service Desk & Operations Management System — Page 1 of 1
+    </div>
+
+</body>
+</html>

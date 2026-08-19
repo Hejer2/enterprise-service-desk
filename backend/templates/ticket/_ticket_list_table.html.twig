@@ -1,0 +1,122 @@
+{% if tickets|length == 0 %}
+    {% include 'components/empty_state.html.twig' with {
+        'icon': '🔍',
+        'title': 'No tickets match your filters',
+        'message': 'Try changing or clearing your current search keywords or filter criteria.',
+        'cta_text': '➕ Create New Ticket',
+        'cta_url': path('app_ticket_create')
+    } %}
+{% else %}
+    <div class="table-container">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px; text-align: center;">
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllTickets(this)" style="cursor: pointer;">
+                    </th>
+                    <th>Number</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Created By</th>
+                    <th>
+                        <a href="#" onclick="changeWebSort('priority'); return false;" style="color: inherit; text-decoration: none;">
+                            Priority {% if sort == 'priority' %}{{ order == 'ASC' ? '▲' : '▼' }}{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" onclick="changeWebSort('status'); return false;" style="color: inherit; text-decoration: none;">
+                            Status {% if sort == 'status' %}{{ order == 'ASC' ? '▲' : '▼' }}{% endif %}
+                        </a>
+                    </th>
+                    <th>SLA</th>
+                    <th>
+                        <a href="#" onclick="changeWebSort('createdAt'); return false;" style="color: inherit; text-decoration: none;">
+                            Created At {% if sort == 'createdAt' %}{{ order == 'ASC' ? '▲' : '▼' }}{% endif %}
+                        </a>
+                    </th>
+                    <th>Assigned To</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                    <tr>
+                        <td style="text-align: center;">
+                            <input type="checkbox" class="ticket-checkbox" value="{{ ticket.id }}" onchange="updateBulkToolbar()" style="cursor: pointer;">
+                        </td>
+                        <td>
+                            <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" style="font-weight: 700; color: var(--primary-color, #2563eb);">
+                                {{ ticket.ticketNumber }}
+                            </a>
+                        </td>
+                        <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500;">
+                            {{ ticket.title }}
+                        </td>
+                        <td>{{ ticket.category }}</td>
+                        <td>{{ ticket.createdBy ? ticket.createdBy.firstName ~ ' ' ~ ticket.createdBy.lastName : 'Unknown' }}</td>
+                        <td>
+                            <span class="badge badge-{{ ticket.priority|lower }}">
+                                {{ ticket.priority }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ ticket.status|lower|replace({' ': ''}) }}">
+                                {{ ticket.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% set slaObj = ticket_slas[ticket.id] ?? null %}
+                            {% if slaObj is defined and slaObj is not null %}
+                                {% set sStatus = slaObj.resolutionStatus %}
+                                {% if slaObj.pausedAt is not null %}
+                                    <span class="badge" style="background: #fef3c7; color: #b45309; font-size: 11px;" aria-label="SLA Status Paused">PAUSED</span>
+                                {% elseif sStatus == 'COMPLETED' %}
+                                    <span class="badge badge-open" style="font-size: 11px;" aria-label="SLA Status Completed">COMPLETED</span>
+                                {% elseif sStatus == 'BREACHED' %}
+                                    <span class="badge badge-rejected" style="font-size: 11px;" aria-label="SLA Status Breached">BREACHED</span>
+                                {% elseif sStatus == 'AT_RISK' %}
+                                    <span class="badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; font-size: 11px;" aria-label="SLA Status At Risk">AT RISK</span>
+                                {% else %}
+                                    <span class="badge badge-open" style="font-size: 11px;" aria-label="SLA Status Active">ACTIVE</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="font-size: 11px; color: var(--text-muted);">-</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 13px; color: var(--text-muted, #64748b);">
+                            {{ ticket.createdAt|date('d M Y, H:i') }}
+                        </td>
+                        <td style="font-weight: 500;">
+                            {{ ticket.assignedTo ? ticket.assignedTo.firstName ~ ' ' ~ ticket.assignedTo.lastName : 'Unassigned' }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination & Page Size Control Footer -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; flex-wrap: wrap; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #64748b;">
+            <span>Show</span>
+            <select id="pageSizeSelect" onchange="changePageSize(this.value)" class="form-input" style="padding: 4px 8px; font-size: 13px; width: auto; min-height: 32px;">
+                <option value="10" {% if limit == 10 %}selected{% endif %}>10</option>
+                <option value="25" {% if limit == 25 %}selected{% endif %}>25</option>
+                <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
+            </select>
+            <span>items per page (Total: {{ total_tickets }})</span>
+        </div>
+
+        {% if total_pages > 1 %}
+            <div style="display: flex; gap: 6px;">
+                {% for p in 1..total_pages %}
+                    <button type="button" onclick="changeWebPage({{ p }})" 
+                            class="btn {% if p == page %}btn-primary{% else %}btn-secondary{% endif %}"
+                            style="padding: 6px 12px; min-width: 36px; justify-content: center; font-size: 13px;">
+                        {{ p }}
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endif %}

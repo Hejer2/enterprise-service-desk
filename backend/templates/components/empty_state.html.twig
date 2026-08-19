@@ -1,0 +1,12 @@
+<div class="empty-state-card" style="text-align: center; padding: 48px 24px; background: var(--bg-surface, #ffffff); border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); margin: 20px 0;">
+    <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 24px; color: #2563eb;">{{ icon|default('📂') }}</span>
+    </div>
+    <h3 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">{{ title|default('No items found') }}</h3>
+    <p style="font-size: 14px; color: #64748b; max-width: 360px; margin: 0 auto 20px; line-height: 1.5;">{{ message|default('There are no items to display right now.') }}</p>
+    {% if cta_text is defined and cta_url is defined and cta_text and cta_url %}
+        <a href="{{ cta_url }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
+            {{ cta_text }}
+        </a>
+    {% endif %}
+</div>
