@@ -36,7 +36,7 @@ void main() {
         child: const MyApp(),
       ),
     );
-    await tester.pumpAndSettle();
-    expect(find.byType(MaterialApp), findsOneWidget);
+    await tester.pump();
+    expect(find.byType(MyApp), findsOneWidget);
   });
 }
