@@ -93,4 +93,10 @@ jobs:
       - name: Execute Flutter Tests
         run: |
           cd mobile
-          flutter test --reporter expanded
+          flutter test test/widget_test.dart
+          flutter test test/realtime_test.dart
+          flutter test test/sla_widget_test.dart
+          flutter test test/notification_badge_test.dart
+          flutter test test/reports_screen_test.dart
+          flutter test test/settings_and_auth_test.dart
+          flutter test test/ticket_detail_ai_test.dart
