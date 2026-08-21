@@ -7,8 +7,11 @@ import 'package:mobile/main.dart';
 import 'package:mobile/models/user.dart';
 import 'package:mobile/screens/auth/login_screen.dart';
 import 'package:mobile/repositories/auth_repository.dart';
+import 'package:mobile/services/api_client.dart';
 
-class MockAuthRepository implements AuthRepository {
+class MockAuthRepository extends AuthRepository {
+  MockAuthRepository() : super(ApiClient(customBaseUrl: 'http://localhost'));
+
   @override
   Future<User?> login(String email, String password) async => null;
 

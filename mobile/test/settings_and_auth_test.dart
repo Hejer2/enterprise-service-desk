@@ -13,6 +13,7 @@ import 'package:mobile/repositories/auth_repository.dart';
 import 'package:mobile/repositories/settings_repository.dart';
 import 'package:mobile/screens/auth/login_screen.dart';
 import 'package:mobile/screens/settings/settings_screen.dart';
+import 'package:mobile/services/api_client.dart';
 import 'package:dio/dio.dart';
 
 class FakeSettingsRepository implements SettingsRepository {
@@ -83,7 +84,9 @@ class FakeSettingsRepository implements SettingsRepository {
   }
 }
 
-class FakeAuthRepository implements AuthRepository {
+class FakeAuthRepository extends AuthRepository {
+  FakeAuthRepository() : super(ApiClient(customBaseUrl: 'http://localhost'));
+
   @override
   Future<User?> login(String email, String password) async {
     if (email == 'valid@example.com' && password == 'ValidPass123!') {
