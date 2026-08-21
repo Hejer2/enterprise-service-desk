@@ -64,7 +64,7 @@ jobs:
           DATABASE_URL: "mysql://root:root@127.0.0.1:3306/splendid_kepler_test?serverVersion=8.0.32&charset=utf8mb4"
         run: |
           cd backend
-          php bin/phpunit --display-errors --display-warnings --display-notices
+          php vendor/bin/phpunit --display-errors --display-warnings --display-notices
 
   mobile-tests:
     name: Mobile Flutter Analysis & Tests
@@ -77,8 +77,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.x'
           channel: 'stable'
+          cache: true
 
       - name: Install Flutter Dependencies
         run: |

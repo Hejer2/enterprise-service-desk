@@ -52,12 +52,38 @@ class WebTicketAiTest extends KernelTestCase
 
     public function testWebAiEndpoints(): void
     {
-        $admin = $this->em->getRepository(User::class)->findOneBy(['email' => 'admin@example.com']);
-        $ticket = $this->em->getRepository(Ticket::class)->findOneBy([]);
-
-        if (!$admin || !$ticket) {
-            $this->markTestSkipped('Admin or ticket not found in database');
+        $role = $this->em->getRepository(\App\Entity\Role::class)->findOneBy(['name' => 'ROLE_ADMIN']);
+        if (!$role) {
+            $role = new \App\Entity\Role();
+            $role->setName('ROLE_ADMIN');
+            $role->setDisplayName('Administrator');
+            $this->em->persist($role);
         }
+
+        $admin = $this->em->getRepository(User::class)->findOneBy(['email' => 'admin@example.com']);
+        if (!$admin) {
+            $admin = new User();
+            $admin->setEmail('admin@example.com');
+            $admin->setFirstName('Admin');
+            $admin->setLastName('User');
+            $admin->setPassword('password123');
+            $admin->setRoleEntity($role);
+            $this->em->persist($admin);
+        }
+
+        $ticket = $this->em->getRepository(Ticket::class)->findOneBy([]);
+        if (!$ticket) {
+            $ticket = new Ticket();
+            $ticket->setTicketNumber('TCK-' . uniqid());
+            $ticket->setTitle('Sample AI Test Ticket');
+            $ticket->setDescription('Cannot connect to server.');
+            $ticket->setCategory('IT Support');
+            $ticket->setPriority('High');
+            $ticket->setStatus('Open');
+            $ticket->setCreatedBy($admin);
+            $this->em->persist($ticket);
+        }
+        $this->em->flush();
 
         $tokenStorage = new \Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage();
         $token = new UsernamePasswordToken($admin, 'main', $admin->getRoles());
