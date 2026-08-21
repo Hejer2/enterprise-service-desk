@@ -38,7 +38,7 @@ class Phase3aTest extends KernelTestCase
             if (!$role) {
                 $role = new Role();
                 $role->setName($roleName);
-                $role->setDescription($roleName);
+                $role->setDisplayName($roleName);
                 $this->em->persist($role);
             }
 
