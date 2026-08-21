@@ -15,6 +15,7 @@ class MockUnreadNotifier extends UnreadNotificationsNotifier {
       : super(
           NotificationRepository(ApiClient(customBaseUrl: 'http://localhost')),
           RealtimeService(),
+          autoFetch: false,
         ) {
     state = initial;
   }

@@ -26,9 +26,11 @@ class UnreadNotificationsNotifier extends StateNotifier<int> {
   final RealtimeService _realtimeService;
   StreamSubscription<RealtimeEvent>? _subscription;
 
-  UnreadNotificationsNotifier(this._repo, this._realtimeService) : super(0) {
-    _fetchInitial();
-    _listenToRealtimeEvents();
+  UnreadNotificationsNotifier(this._repo, this._realtimeService, {bool autoFetch = true}) : super(0) {
+    if (autoFetch) {
+      _fetchInitial();
+      _listenToRealtimeEvents();
+    }
   }
 
   Future<void> _fetchInitial() async {
