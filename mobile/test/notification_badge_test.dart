@@ -5,11 +5,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/widgets/main_scaffold.dart';
 import 'package:mobile/providers/notification_providers.dart';
+import 'package:mobile/repositories/notification_repository.dart';
+import 'package:mobile/services/api_client.dart';
+import 'package:mobile/services/realtime_service.dart';
 import 'package:mobile/screens/auth/login_screen.dart';
 
-class MockUnreadNotifier extends StateNotifier<int>
-    implements UnreadNotificationsNotifier {
-  MockUnreadNotifier(super.initial);
+class MockUnreadNotifier extends UnreadNotificationsNotifier {
+  MockUnreadNotifier(int initial)
+      : super(
+          NotificationRepository(ApiClient(customBaseUrl: 'http://localhost')),
+          RealtimeService(),
+        ) {
+    state = initial;
+  }
 
   @override
   void clear() => state = 0;

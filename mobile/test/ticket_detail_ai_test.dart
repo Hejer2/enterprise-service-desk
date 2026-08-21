@@ -10,11 +10,13 @@ import 'package:mobile/models/ticket.dart';
 import 'package:mobile/models/user.dart';
 import 'package:mobile/models/role.dart';
 import 'package:mobile/repositories/ai_repository.dart';
+import 'package:mobile/services/api_client.dart';
 import 'package:mobile/screens/auth/login_screen.dart';
 import 'package:mobile/screens/tickets/ticket_detail_screen.dart';
 import 'package:mobile/screens/tickets/widgets/ai_assistant_card.dart';
 
-class FakeAiRepository implements AiRepository {
+class FakeAiRepository extends AiRepository {
+  FakeAiRepository() : super(ApiClient(customBaseUrl: 'http://localhost'));
   @override
   Future<AiTicketAnalysis> classifyTicket(int ticketId) async {
     return AiTicketAnalysis(

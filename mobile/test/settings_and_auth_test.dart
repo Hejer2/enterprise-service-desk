@@ -16,7 +16,9 @@ import 'package:mobile/screens/settings/settings_screen.dart';
 import 'package:mobile/services/api_client.dart';
 import 'package:dio/dio.dart';
 
-class FakeSettingsRepository implements SettingsRepository {
+class FakeSettingsRepository extends SettingsRepository {
+  FakeSettingsRepository() : super(ApiClient(customBaseUrl: 'http://localhost'));
+
   bool changePasswordCalled = false;
   bool updateProfileCalled = false;
   bool saveNotificationPreferencesCalled = false;
