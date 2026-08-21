@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/utils/error_handler.dart';
 import 'package:mobile/core/widgets/main_scaffold.dart';
 import 'package:mobile/models/role.dart';
@@ -117,6 +118,7 @@ void main() {
 
   setUpAll(() {
     GoogleFonts.config.allowRuntimeFetching = false;
+    SharedPreferences.setMockInitialValues({});
   });
 
   final sampleUser = User(

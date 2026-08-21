@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/models/ai_reply.dart';
 import 'package:mobile/models/ai_summary.dart';
 import 'package:mobile/models/ai_ticket_analysis.dart';
@@ -92,7 +93,9 @@ class FakeAiRepository implements AiRepository {
 
 void main() {
   setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
     GoogleFonts.config.allowRuntimeFetching = false;
+    SharedPreferences.setMockInitialValues({});
   });
 
   final sampleTicket = Ticket(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/widgets/main_scaffold.dart';
 import 'package:mobile/providers/notification_providers.dart';
 import 'package:mobile/screens/auth/login_screen.dart';
@@ -27,7 +28,9 @@ class MockUnreadNotifier extends StateNotifier<int>
 
 void main() {
   setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
     GoogleFonts.config.allowRuntimeFetching = false;
+    SharedPreferences.setMockInitialValues({});
   });
 
   group('Notification Unread Badge in Top AppBar Tests', () {
