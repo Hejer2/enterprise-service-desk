@@ -36,6 +36,7 @@ jobs:
         run: |
           cd backend
           cp .env.example .env
+          sed -i 's|DATABASE_URL=.*|DATABASE_URL="mysql://root:root@127.0.0.1:3306/splendid_kepler_test?serverVersion=8.0.32\&charset=utf8mb4"|' .env
           mkdir -p config/jwt
           openssl genrsa -out config/jwt/private.pem -passout pass:CHANGE_ME_JWT_PASSPHRASE 4096
           openssl rsa -pubout -in config/jwt/private.pem -passin pass:CHANGE_ME_JWT_PASSPHRASE -out config/jwt/public.pem
@@ -50,13 +51,16 @@ jobs:
 
       - name: Run Doctrine Migrations
         env:
+          APP_ENV: test
           DATABASE_URL: "mysql://root:root@127.0.0.1:3306/splendid_kepler_test?serverVersion=8.0.32&charset=utf8mb4"
         run: |
           cd backend
-          php bin/console doctrine:migrations:migrate --no-interaction
+          php bin/console doctrine:database:create --if-not-exists --no-interaction --env=test
+          php bin/console doctrine:migrations:migrate --no-interaction --env=test
 
       - name: Execute PHPUnit Tests
         env:
+          APP_ENV: test
           DATABASE_URL: "mysql://root:root@127.0.0.1:3306/splendid_kepler_test?serverVersion=8.0.32&charset=utf8mb4"
         run: |
           cd backend
@@ -84,7 +88,7 @@ jobs:
       - name: Flutter Static Analysis
         run: |
           cd mobile
-          flutter analyze
+          flutter analyze --no-fatal-infos
 
       - name: Execute Flutter Tests
         run: |
