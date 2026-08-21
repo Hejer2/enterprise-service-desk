@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/core/utils/error_handler.dart';
 import 'package:mobile/core/widgets/main_scaffold.dart';
 import 'package:mobile/models/role.dart';
@@ -113,6 +114,10 @@ class FakeAuthRepository implements AuthRepository {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
 
   final sampleUser = User(
     id: 1,

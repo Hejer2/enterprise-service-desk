@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/models/ai_reply.dart';
 import 'package:mobile/models/ai_summary.dart';
 import 'package:mobile/models/ai_ticket_analysis.dart';
@@ -90,6 +91,10 @@ class FakeAiRepository implements AiRepository {
 }
 
 void main() {
+  setUpAll(() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
   final sampleTicket = Ticket(
     id: 1,
     ticketNumber: 'TCK-2026-0001',

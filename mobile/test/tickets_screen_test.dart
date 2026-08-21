@@ -2,10 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/models/ticket.dart';
 import 'package:mobile/screens/tickets/ticket_list_screen.dart';
 
 void main() {
+  setUpAll(() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
   group('TicketListScreen Four-State Integrity Tests', () {
     testWidgets('State 1: Loading state renders safely without RenderFlex or viewport crashes',
         (tester) async {

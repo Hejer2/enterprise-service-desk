@@ -49,14 +49,14 @@ jobs:
           cd backend
           composer install --no-progress --prefer-dist
 
-      - name: Run Doctrine Migrations
+      - name: Create Database Schema
         env:
           APP_ENV: test
           DATABASE_URL: "mysql://root:root@127.0.0.1:3306/splendid_kepler_test?serverVersion=8.0.32&charset=utf8mb4"
         run: |
           cd backend
           php bin/console doctrine:database:create --if-not-exists --no-interaction --env=test
-          php bin/console doctrine:migrations:migrate --no-interaction --env=test
+          php bin/console doctrine:schema:create --no-interaction --env=test
 
       - name: Execute PHPUnit Tests
         env:

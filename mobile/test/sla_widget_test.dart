@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/core/widgets/sla_status_badge.dart';
 import 'package:mobile/core/widgets/sla_card.dart';
 import 'package:mobile/models/ticket_sla.dart';
 
 void main() {
+  setUpAll(() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
   group('SLA Widgets and Defensive Model Tests', () {
     testWidgets('SlaStatusBadge renders ACTIVE, AT_RISK, BREACHED, PAUSED, COMPLETED correctly', (tester) async {
       await tester.pumpWidget(
