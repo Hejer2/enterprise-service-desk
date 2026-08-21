@@ -90,13 +90,23 @@ jobs:
           cd mobile
           flutter analyze --no-fatal-infos
 
-      - name: Execute Flutter Tests
-        run: |
-          cd mobile
-          flutter test test/widget_test.dart
-          flutter test test/realtime_test.dart
-          flutter test test/sla_widget_test.dart
-          flutter test test/notification_badge_test.dart
-          flutter test test/reports_screen_test.dart
-          flutter test test/settings_and_auth_test.dart
-          flutter test test/ticket_detail_ai_test.dart
+      - name: Test Widget Initialization
+        run: cd mobile && flutter test test/widget_test.dart
+
+      - name: Test Realtime Service
+        run: cd mobile && flutter test test/realtime_test.dart
+
+      - name: Test SLA Widgets
+        run: cd mobile && flutter test test/sla_widget_test.dart
+
+      - name: Test Notification Badge
+        run: cd mobile && flutter test test/notification_badge_test.dart
+
+      - name: Test Reports Screen
+        run: cd mobile && flutter test test/reports_screen_test.dart
+
+      - name: Test Settings and Auth
+        run: cd mobile && flutter test test/settings_and_auth_test.dart
+
+      - name: Test Ticket Detail and AI
+        run: cd mobile && flutter test test/ticket_detail_ai_test.dart
