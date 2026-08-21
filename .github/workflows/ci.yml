@@ -32,7 +32,18 @@ jobs:
           extensions: pdo, pdo_mysql, intl, zip
           coverage: none
 
+      - name: Prepare Backend Environment & JWT Keys
+        run: |
+          cd backend
+          cp .env.example .env
+          mkdir -p config/jwt
+          openssl genrsa -out config/jwt/private.pem -passout pass:CHANGE_ME_JWT_PASSPHRASE 4096
+          openssl rsa -pubout -in config/jwt/private.pem -passin pass:CHANGE_ME_JWT_PASSPHRASE -out config/jwt/public.pem
+
       - name: Install PHP Dependencies
+        env:
+          APP_ENV: test
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/splendid_kepler_test?serverVersion=8.0.32&charset=utf8mb4"
         run: |
           cd backend
           composer install --no-progress --prefer-dist
