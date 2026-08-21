@@ -31,8 +31,8 @@ class ExecutiveAnalyticsService
         $comparison = [];
         if ($compare) {
             $durationSec = $currentTo->getTimestamp() - $currentFrom->getTimestamp();
-            $prevTo = $currentFrom;
-            $prevFrom = $currentFrom->modify("-{$durationSec} seconds");
+            $prevTo = clone $currentFrom;
+            $prevFrom = (clone $currentFrom)->modify("-{$durationSec} seconds");
 
             $previousData = $this->calculateMetricsForPeriod($prevFrom, $prevTo, $filters);
             $comparison = $this->calculateComparison($currentData['kpis'], $previousData['kpis']);

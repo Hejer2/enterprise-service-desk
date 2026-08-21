@@ -64,7 +64,7 @@ jobs:
           DATABASE_URL: "mysql://root:root@127.0.0.1:3306/splendid_kepler_test?serverVersion=8.0.32&charset=utf8mb4"
         run: |
           cd backend
-          php bin/phpunit
+          php bin/phpunit --display-errors --display-warnings --display-notices
 
   mobile-tests:
     name: Mobile Flutter Analysis & Tests
@@ -93,4 +93,4 @@ jobs:
       - name: Execute Flutter Tests
         run: |
           cd mobile
-          flutter test
+          flutter test --reporter expanded
