@@ -14,10 +14,10 @@
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
-        <server name="DATABASE_URL" value="mysql://servicedesk:servicedesk_pass@127.0.0.1:3306/servicedesk?serverVersion=8.0.32&amp;charset=utf8mb4" force="false" />
+        <server name="DATABASE_URL" value="mysql://root:root@127.0.0.1:3306/splendid_kepler_test?serverVersion=8.0.32&amp;charset=utf8mb4" force="false" />
         <server name="JWT_SECRET_KEY" value="%kernel.project_dir%/config/jwt/private.pem" force="false" />
         <server name="JWT_PUBLIC_KEY" value="%kernel.project_dir%/config/jwt/public.pem" force="false" />
-        <server name="JWT_PASSPHRASE" value="038a26617a25b82a0dd4f9e028ada2a577aba334a76a84acf0a2f2c738b6b399" force="false" />
+        <server name="JWT_PASSPHRASE" value="CHANGE_ME_JWT_PASSPHRASE" force="false" />
         <server name="SHELL_VERBOSITY" value="-1" />
     </php>
 
