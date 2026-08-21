@@ -19,7 +19,7 @@ class AuditLogger
      */
     public function log(?User $user, string $action, ?string $entityName = null, ?int $entityId = null, ?array $details = null): void
     {
-        $request = $this->requestStack->getCurrentRequest();
+        $request = $this->requestStack?->getCurrentRequest();
         $ipAddress = $request ? $request->getClientIp() : null;
 
         $log = new ActivityLog();

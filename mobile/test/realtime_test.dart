@@ -39,7 +39,7 @@ void main() {
       service.handleIncomingEvent(json);
       service.handleIncomingEvent(json); // Duplicate call
 
-      await Future.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
       expect(count, equals(1));
       service.dispose();
     });

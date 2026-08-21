@@ -28,6 +28,27 @@ class Phase3aTest extends KernelTestCase
         $this->em = $kernel->getContainer()->get('doctrine')->getManager();
         $activityLogger = new \App\Service\TicketActivityLogger($this->em);
         $this->slaService = new SlaService($this->em, $activityLogger);
+
+        $this->getOrCreateSlaPolicy('Critical');
+        $this->getOrCreateSlaPolicy('High');
+        $this->getOrCreateSlaPolicy('Medium');
+        $this->getOrCreateSlaPolicy('Low');
+    }
+
+    private function getOrCreateSlaPolicy(string $priority): \App\Entity\SlaPolicy
+    {
+        $policy = $this->em->getRepository(\App\Entity\SlaPolicy::class)->findOneBy(['priority' => $priority]);
+        if (!$policy) {
+            $policy = new \App\Entity\SlaPolicy();
+            $policy->setName($priority . ' SLA');
+            $policy->setPriority($priority);
+            $policy->setFirstResponseMinutes(60);
+            $policy->setResolutionMinutes(240);
+            $policy->setIsActive(true);
+            $this->em->persist($policy);
+            $this->em->flush();
+        }
+        return $policy;
     }
 
     private function getOrCreateUser(string $email, string $roleName): User
